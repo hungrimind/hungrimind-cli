@@ -1,12 +1,14 @@
 {
-  "name": "hungrimind-cli",
+  "name": "@hungrimind/hungrimind-cli",
   "description": "A CLI created by the people over at Hungrimind",
   "version": "0.0.0",
   "author": "Robert Brunhage",
   "bin": {
-    "hungrimind": "./bin/run.js"
+    "hungrimind": "bin/run.js"
   },
-  "bugs": "https://github.com/hungrimind/hungrimind-cli/issues",
+  "bugs": {
+    "url": "https://github.com/hungrimind/hungrimind-cli/issues"
+  },
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
@@ -55,7 +57,10 @@
     ],
     "topicSeparator": " "
   },
-  "repository": "hungrimind/hungrimind-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hungrimind/hungrimind-cli.git"
+  },
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint",
@@ -65,5 +70,8 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
-  "types": "dist/index.d.ts"
+  "types": "dist/index.d.ts",
+  "directories": {
+    "test": "test"
+  }
 }
