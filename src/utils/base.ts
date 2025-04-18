@@ -24,12 +24,21 @@ export abstract class AuthenticatedCommand extends Command {
     const url = `${API_BASE_URL}${endpoint}`
     
     this.log(`Making API call to: ${url}`)
+
+    // If there's an existing body, parse it and add the token
+    let body = {}
+    if (options.body) {
+      body = JSON.parse(options.body as string)
+    }
     
     const response = await fetch(url, {
       ...options,
+      body: JSON.stringify({
+        ...body,
+        githubToken: token,
+      }),
       headers: {
         ...options.headers,
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     })

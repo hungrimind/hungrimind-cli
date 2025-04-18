@@ -1,4 +1,4 @@
 export const GITHUB_CLIENT_ID = 'Ov23liStN6iVbf7DMFpC'
 
 // Add other configuration values here as needed
-export const API_BASE_URL = 'https://hungrimind.com/api' 
+export const API_BASE_URL = 'https://hungrimind.com/api'

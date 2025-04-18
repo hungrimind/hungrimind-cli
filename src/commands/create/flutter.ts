@@ -3,6 +3,10 @@ import * as path from 'path'
 import {AuthenticatedCommand} from '../../utils/base.js'
 import {extractAndRenameProject} from '../../utils/flutter.js'
 
+interface BoilerplateResponse {
+  downloadUrl: string
+}
+
 export default class CreateFlutter extends AuthenticatedCommand {
   static override description = 'Create a new Flutter project with Hungrimind boilerplate'
 
@@ -35,11 +39,19 @@ export default class CreateFlutter extends AuthenticatedCommand {
         throw new Error(`Failed to fetch boilerplate: ${response.statusText}`)
       }
 
-      if (response.headers.get('Content-Type') !== 'application/zip') {
-        throw new Error('Expected zip file from server')
+      const data = await response.json() as BoilerplateResponse
+      
+      // Fetch the zip file from the download URL
+      const zipResponse = await fetch(data.downloadUrl)
+      if (!zipResponse.ok) {
+        throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
       }
 
-      const buffer = await response.arrayBuffer()
+      if (!zipResponse.headers.get('Content-Type')?.includes('application/zip')) {
+        throw new Error('Expected zip file from download URL')
+      }
+
+      const buffer = await zipResponse.arrayBuffer()
       const targetPath = path.join(process.cwd(), args.name)
       
       await extractAndRenameProject(buffer, args.name, targetPath)
