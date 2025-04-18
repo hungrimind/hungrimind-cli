@@ -20,7 +20,7 @@ $ npm install -g hungrimind-cli
 $ hungrimind COMMAND
 running command...
 $ hungrimind (--version)
-hungrimind-cli/0.0.0 darwin-arm64 node-v23.6.0
+hungrimind-cli/0.0.0 linux-x64 node-v20.19.0
 $ hungrimind --help [COMMAND]
 USAGE
   $ hungrimind COMMAND
@@ -29,8 +29,6 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`hungrimind hello PERSON`](#hungrimind-hello-person)
-* [`hungrimind hello world`](#hungrimind-hello-world)
 * [`hungrimind help [COMMAND]`](#hungrimind-help-command)
 * [`hungrimind plugins`](#hungrimind-plugins)
 * [`hungrimind plugins add PLUGIN`](#hungrimind-plugins-add-plugin)
@@ -42,48 +40,6 @@ USAGE
 * [`hungrimind plugins uninstall [PLUGIN]`](#hungrimind-plugins-uninstall-plugin)
 * [`hungrimind plugins unlink [PLUGIN]`](#hungrimind-plugins-unlink-plugin)
 * [`hungrimind plugins update`](#hungrimind-plugins-update)
-
-## `hungrimind hello PERSON`
-
-Say hello
-
-```
-USAGE
-  $ hungrimind hello PERSON -f <value>
-
-ARGUMENTS
-  PERSON  Person to say hello to
-
-FLAGS
-  -f, --from=<value>  (required) Who is saying hello
-
-DESCRIPTION
-  Say hello
-
-EXAMPLES
-  $ hungrimind hello friend --from oclif
-  hello friend from oclif! (./src/commands/hello/index.ts)
-```
-
-_See code: [src/commands/hello/index.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.0/src/commands/hello/index.ts)_
-
-## `hungrimind hello world`
-
-Say hello world
-
-```
-USAGE
-  $ hungrimind hello world
-
-DESCRIPTION
-  Say hello world
-
-EXAMPLES
-  $ hungrimind hello world
-  hello world! (./src/commands/hello/world.ts)
-```
-
-_See code: [src/commands/hello/world.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.0/src/commands/hello/world.ts)_
 
 ## `hungrimind help [COMMAND]`
 
