@@ -10,7 +10,10 @@
   "dependencies": {
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
-    "@oclif/plugin-plugins": "^5"
+    "@oclif/plugin-plugins": "^5",
+    "@types/unzipper": "^0.10.11",
+    "open": "^10.1.1",
+    "unzipper": "^0.12.3"
   },
   "devDependencies": {
     "@eslint/compat": "^1",
