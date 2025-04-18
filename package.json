@@ -1,7 +1,7 @@
 {
   "name": "@hungrimind/hungrimind-cli",
   "description": "A CLI created by the people over at Hungrimind",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "Robert Brunhage",
   "bin": {
     "hungrimind": "bin/run.js"
@@ -73,5 +73,8 @@
   "types": "dist/index.d.ts",
   "directories": {
     "test": "test"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

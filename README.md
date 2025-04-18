@@ -16,11 +16,11 @@ A CLI created by the people over at Hungrimind
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g hungrimind-cli
+$ npm install -g @hungrimind/hungrimind-cli
 $ hungrimind COMMAND
 running command...
 $ hungrimind (--version)
-hungrimind-cli/0.0.0 darwin-arm64 node-v23.6.0
+@hungrimind/hungrimind-cli/0.0.0 darwin-arm64 node-v23.6.0
 $ hungrimind --help [COMMAND]
 USAGE
   $ hungrimind COMMAND
