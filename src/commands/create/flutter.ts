@@ -1,6 +1,6 @@
-import {Command, Args} from '@oclif/core'
+import {Args} from '@oclif/core'
 import * as path from 'path'
-import {AuthenticatedCommand} from '../base.js'
+import {AuthenticatedCommand} from '../../utils/base.js'
 import {extractAndRenameProject} from '../../utils/flutter.js'
 
 export default class CreateFlutter extends AuthenticatedCommand {
