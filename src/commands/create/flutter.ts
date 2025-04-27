@@ -1,13 +1,19 @@
-import {Args} from '@oclif/core'
+import {Args, Command} from '@oclif/core'
 import * as path from 'path'
-import {AuthenticatedCommand} from '../../utils/base.js'
+import * as os from 'os'
+import * as fs from 'fs/promises'
+import {API_BASE_URL} from '../../config.js'
 import {extractAndRenameProject} from '../../utils/flutter.js'
 
 interface BoilerplateResponse {
   downloadUrl: string
 }
 
-export default class CreateFlutter extends AuthenticatedCommand {
+interface AuthConfig {
+  token: string
+}
+
+export default class CreateFlutter extends Command {
   static override description = 'Create a new Flutter project with Hungrimind boilerplate'
 
   static args = {
@@ -23,20 +29,53 @@ export default class CreateFlutter extends AuthenticatedCommand {
     }),
   }
 
+  private async getStoredToken(): Promise<string> {
+    const configPath = path.join(os.homedir(), '.hungrimind', 'auth.json')
+    try {
+      const config = JSON.parse(await fs.readFile(configPath, 'utf8')) as AuthConfig
+      if (!config.token) {
+        throw new Error('Token not found in auth config.')
+      }
+      return config.token
+    } catch (error) {
+      try {
+        await fs.unlink(configPath)
+        this.log('Removed potentially invalid auth file.')
+      } catch (unlinkError) {
+        this.log(`Warning: Could not remove auth file at ${configPath}: ${unlinkError}`)
+      }
+      this.error('Authentication failed or token missing. Please run `hungrimind auth` to log in.')
+    }
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateFlutter)
     this.log(`Creating Flutter project: ${args.name}`)
 
     try {
-      const response = await this.callApi('/flutter/boilerplate', {
+      const token = await this.getStoredToken()
+      const endpoint = '/flutter/boilerplate'
+      const url = `${API_BASE_URL}${endpoint}`
+      this.log(`Making API call to: ${url}`)
+
+      const requestBody = { name: args.name }
+
+      const response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify({
-          name: args.name,
+          ...requestBody,
+          githubToken: token,
         }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
 
+      this.log(`Response status: ${response.status}`)
       if (!response.ok) {
-        throw new Error(`Failed to fetch boilerplate: ${response.statusText}`)
+        const responseText = await response.text()
+        this.log(`Response text: ${responseText}`)
+        throw new Error(`Failed to fetch boilerplate: ${response.statusText} - ${responseText}`)
       }
 
       const data = await response.json() as BoilerplateResponse
