@@ -1,4 +1,4 @@
-import {Args, Command} from '@oclif/core'
+import {Args, Command, Flags} from '@oclif/core'
 import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
@@ -15,6 +15,10 @@ interface AuthConfig {
 
 export default class CreateFlutter extends Command {
   static override description = 'Create a new Flutter project with Hungrimind boilerplate'
+
+  static flags = {
+    verbose: Flags.boolean({char: 'v', description: 'Enable verbose output for debugging'}),
+  }
 
   static args = {
     name: Args.string({
@@ -49,7 +53,7 @@ export default class CreateFlutter extends Command {
   }
 
   public async run(): Promise<void> {
-    const {args} = await this.parse(CreateFlutter)
+    const {args, flags} = await this.parse(CreateFlutter)
     this.log(`Creating Flutter project: ${args.name}`)
 
     try {
@@ -59,16 +63,27 @@ export default class CreateFlutter extends Command {
       this.log(`Making API call to: ${url}`)
 
       const requestBody = { name: args.name }
+      const headers = {
+        'Content-Type': 'application/json',
+      }
+      const bodyString = JSON.stringify({
+        ...requestBody,
+        githubToken: token,
+      })
+
+      if (flags.verbose) {
+        this.log('--- Verbose Request Details ---')
+        this.log(`Token: ${token}`)
+        this.log(`Request Body Object: ${JSON.stringify(requestBody)}`)
+        this.log(`Full Body String: ${bodyString}`)
+        this.log(`Headers: ${JSON.stringify(headers)}`)
+        this.log('-------------------------------')
+      }
 
       const response = await fetch(url, {
         method: 'POST',
-        body: JSON.stringify({
-          ...requestBody,
-          githubToken: token,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        body: bodyString,
+        headers: headers,
       })
 
       this.log(`Response status: ${response.status}`)
