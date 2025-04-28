@@ -1,9 +1,10 @@
-import {Args, Command, Flags} from '@oclif/core'
+import { Args, Command, Flags } from '@oclif/core'
 import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
-import {API_BASE_URL} from '../../config.js'
-import {extractAndRenameProject} from '../../utils/flutter.js'
+import { API_BASE_URL } from '../../config.js'
+import { extractAndRenameProject } from '../../utils/flutter.js'
+import { fetchWithVerboseLogging } from '../../utils/fetch.js'
 
 interface BoilerplateResponse {
   downloadUrl: string
@@ -17,7 +18,7 @@ export default class CreateFlutter extends Command {
   static override description = 'Create a new Flutter project with Hungrimind boilerplate'
 
   static flags = {
-    verbose: Flags.boolean({char: 'v', description: 'Enable verbose output for debugging'}),
+    verbose: Flags.boolean({ char: 'v', description: 'Enable verbose output for debugging' }),
   }
 
   static args = {
@@ -53,48 +54,55 @@ export default class CreateFlutter extends Command {
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(CreateFlutter)
+    const { args, flags } = await this.parse(CreateFlutter)
     this.log(`Creating Flutter project: ${args.name}`)
 
     try {
       const token = await this.getStoredToken()
       const endpoint = '/flutter/boilerplate'
       const url = `${API_BASE_URL}${endpoint}`
-      this.log(`Making API call to: ${url}`)
 
-      const requestBody = { name: args.name }
-      const headers = {
-        'Content-Type': 'application/json',
-      }
-      const bodyString = JSON.stringify({
-        ...requestBody,
-        githubToken: token,
-      })
-
-      if (flags.verbose) {
-        this.log('--- Verbose Request Details ---')
-        this.log(`Token: ${token}`)
-        this.log(`Request Body Object: ${JSON.stringify(requestBody)}`)
-        this.log(`Full Body String: ${bodyString}`)
-        this.log(`Headers: ${JSON.stringify(headers)}`)
-        this.log('-------------------------------')
-      }
-
-      const response = await fetch(url, {
+      // Prepare fetch options
+      const fetchOptions = {
         method: 'POST',
-        body: bodyString,
-        headers: headers,
-      })
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token,
+        },
+      };
+
+      // Use the wrapper function for the API call
+      const { response, responseText } = await fetchWithVerboseLogging(
+        url,
+        fetchOptions,
+        flags.verbose,
+        this.log.bind(this)
+      );
 
       this.log(`Response status: ${response.status}`)
+
       if (!response.ok) {
-        const responseText = await response.text()
-        this.log(`Response text: ${responseText}`)
-        throw new Error(`Failed to fetch boilerplate: ${response.statusText} - ${responseText}`)
+        // Use pre-read text if available (from verbose log), otherwise read now
+        const errorBody = responseText ?? await response.text();
+        this.log(`Error Body: ${errorBody}`);
+        throw new Error(`Failed to fetch boilerplate: ${response.statusText} - ${errorBody}`);
       }
 
-      const data = await response.json() as BoilerplateResponse
-      
+      // Parse JSON data
+      let data: BoilerplateResponse;
+      try {
+        if (responseText !== undefined) {
+          // If text was read for verbose logging, parse it
+          data = JSON.parse(responseText) as BoilerplateResponse;
+        } else {
+          // Otherwise, parse directly from the response stream
+          data = await response.json() as BoilerplateResponse;
+        }
+      } catch (error) {
+        this.error(`Failed to parse boilerplate response JSON: ${error}. Body was: ${responseText ?? '[Not Read]'}`);
+        return; // Exit if parsing fails
+      }
+
       // Fetch the zip file from the download URL
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
@@ -107,14 +115,14 @@ export default class CreateFlutter extends Command {
 
       const buffer = await zipResponse.arrayBuffer()
       const targetPath = path.join(process.cwd(), args.name)
-      
+
       await extractAndRenameProject(buffer, args.name, targetPath)
 
       this.log('\nSuccessfully created Flutter project!')
       this.log('\nNext steps:')
-      this.log(`  1. cd ${args.name}`)
-      this.log('  2. flutter pub get')
-      this.log('  3. flutter run')
+      this.log(`1. cd ${args.name}`)
+      this.log('2. flutter pub get')
+      this.log('3. flutter run')
     } catch (error) {
       this.error(`Failed to create project: ${(error as Error).message}`)
     }
