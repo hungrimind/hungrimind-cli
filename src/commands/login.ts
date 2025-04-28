@@ -1,4 +1,4 @@
-import {Command} from '@oclif/core'
+import {Command, ux} from '@oclif/core'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs/promises'
@@ -34,7 +34,16 @@ export default class Login extends Command {
       })
 
       if (!deviceCodeResponse.ok) {
-        throw new Error('Failed to get device code')
+        this.error('Failed to get device code from GitHub')
+        return
+      }
+
+      const deviceCodeJson = await deviceCodeResponse.json() as {
+        device_code: string;
+        user_code: string;
+        verification_uri: string;
+        expires_in: number;
+        interval: number;
       }
 
       const {
@@ -42,18 +51,22 @@ export default class Login extends Command {
         user_code,
         verification_uri,
         interval,
-      } = await deviceCodeResponse.json()
+      } = deviceCodeJson
 
       // Step 2: Show instructions to user
-      this.log('\nTo login, please follow these steps:')
-      this.log(`1. Copy this code: ${user_code}`)
-      this.log(`2. Visit: ${verification_uri}`)
-      this.log('3. Paste the code when prompted\n')
+      this.log(ux.colorize('blue', 'To complete the GitHub login process:\n'))
+      this.log(`1. Copy this code: ${ux.colorize('cyan', ux.colorize('bold', user_code))}`)
+      this.log(`2. Visit this URL in your browser: ${ux.colorize('blue', verification_uri)}`)
+      this.log('3. Paste the code when prompted.')
+
+      this.log('\nOpening the authentication page in your browser...')
 
       // Automatically open the verification URL
       await open(verification_uri)
 
       // Step 3: Poll for completion
+      ux.action.start('Waiting for GitHub authentication...')
+
       while (true) {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
           method: 'POST',
@@ -69,10 +82,10 @@ export default class Login extends Command {
         })
 
         if (!tokenResponse.ok) {
-          throw new Error('Failed to check authorization status')
+          this.error('Failed to check authorization status with GitHub')
         }
 
-        const data = await tokenResponse.json()
+        const data = await tokenResponse.json() as { error?: string, access_token?: string }
 
         if (data.error === 'authorization_pending') {
           await this.sleep(interval * 1000)
@@ -80,17 +93,21 @@ export default class Login extends Command {
         }
 
         if (data.error) {
-          throw new Error(`Authorization failed: ${data.error}`)
+          this.error(`GitHub authorization failed: ${data.error}`)
         }
 
         if (data.access_token) {
           await this.saveToken(data.access_token)
-          this.log('\nSuccessfully authenticated with GitHub!')
+          ux.action.stop(ux.colorize('green', '✔ done!'))
+          this.log(ux.colorize('green', '🎉 Successfully authenticated with GitHub!'))
           break
         }
       }
     } catch (error) {
-      this.error('Authentication failed: ' + (error as Error).message)
+      if (ux.action.running) {
+        ux.action.stop(ux.colorize('red', '✖ failed'))
+      }
+      this.error('Authentication failed unexpectedly: ' + (error instanceof Error ? error.message : String(error)))
     }
   }
 }

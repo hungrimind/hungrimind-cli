@@ -10,28 +10,28 @@
     "url": "https://github.com/hungrimind/hungrimind-cli/issues"
   },
   "dependencies": {
-    "@oclif/core": "^4",
-    "@oclif/plugin-help": "^6",
+    "@oclif/core": "^4.2.10",
+    "@oclif/plugin-help": "^6.2.27",
     "@types/unzipper": "^0.10.11",
     "open": "^10.1.1",
     "unzipper": "^0.12.3"
   },
   "devDependencies": {
-    "@eslint/compat": "^1",
+    "@eslint/compat": "^1.2.8",
     "@oclif/prettier-config": "^0.2.1",
-    "@oclif/test": "^4",
-    "@types/chai": "^4",
-    "@types/mocha": "^10",
-    "@types/node": "^18",
-    "chai": "^4",
-    "eslint": "^9",
-    "eslint-config-oclif": "^6",
-    "eslint-config-prettier": "^10",
-    "mocha": "^10",
-    "oclif": "^4",
-    "shx": "^0.3.3",
-    "ts-node": "^10",
-    "typescript": "^5"
+    "@oclif/test": "^4.1.12",
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^18.19.87",
+    "chai": "^4.5.0",
+    "eslint": "^9.25.1",
+    "eslint-config-oclif": "^6.0.50",
+    "eslint-config-prettier": "^10.1.2",
+    "mocha": "^10.8.2",
+    "oclif": "^4.17.46",
+    "shx": "^0.3.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "engines": {
     "node": ">=18.0.0"

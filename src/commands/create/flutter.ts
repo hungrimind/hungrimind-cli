@@ -1,4 +1,4 @@
-import { Args, Command, Flags } from '@oclif/core'
+import { Args, Command, Flags, ux } from '@oclif/core'
 import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
@@ -47,17 +47,21 @@ export default class CreateFlutter extends Command {
         await fs.unlink(configPath)
         this.log('Removed potentially invalid auth file.')
       } catch (unlinkError) {
-        this.log(`Warning: Could not remove auth file at ${configPath}: ${unlinkError}`)
+        this.warn(`Could not remove auth file at ${configPath}: ${unlinkError}`)
       }
-      this.error('Authentication failed or token missing. Please run `hungrimind login` to log in.')
+      this.error(ux.colorize('red', 'Authentication failed or token missing. Please run `hungrimind login` to log in.'), { exit: 1 })
     }
   }
 
   public async run(): Promise<void> {
     const { args, flags } = await this.parse(CreateFlutter)
-    this.log(`Creating Flutter project: ${args.name}`)
+    this.log(ux.colorize('blue', `Creating Flutter project: ${ux.colorize('cyan', args.name)}`))
+
+    let actionRunning = false;
 
     try {
+      ux.action.start('Fetching boilerplate details')
+      actionRunning = true;
       const token = await this.getStoredToken()
       const endpoint = '/flutter/boilerplate'
       const url = `${API_BASE_URL}${endpoint}`
@@ -79,52 +83,68 @@ export default class CreateFlutter extends Command {
         this.log.bind(this)
       );
 
-      this.log(`Response status: ${response.status}`)
+      if (flags.verbose) {
+        this.log(`Response status: ${response.status}`)
+      }
 
       if (!response.ok) {
-        // Use pre-read text if available (from verbose log), otherwise read now
         const errorBody = responseText ?? await response.text();
-        this.log(`Error Body: ${errorBody}`);
-        throw new Error(`Failed to fetch boilerplate: ${response.statusText} - ${errorBody}`);
+        if (flags.verbose) {
+          this.log(`Error Body: ${errorBody}`);
+        }
+        throw new Error(`Failed to fetch boilerplate: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`);
       }
 
       // Parse JSON data
       let data: BoilerplateResponse;
       try {
-        if (responseText !== undefined) {
-          // If text was read for verbose logging, parse it
-          data = JSON.parse(responseText) as BoilerplateResponse;
-        } else {
-          // Otherwise, parse directly from the response stream
-          data = await response.json() as BoilerplateResponse;
-        }
+        const bodyToParse = responseText ?? await response.json();
+        data = typeof bodyToParse === 'string' ? JSON.parse(bodyToParse) as BoilerplateResponse : bodyToParse as BoilerplateResponse;
       } catch (error) {
-        this.error(`Failed to parse boilerplate response JSON: ${error}. Body was: ${responseText ?? '[Not Read]'}`);
-        return; // Exit if parsing fails
+        const bodyContent = responseText ?? '[Response body not available or already consumed]';
+        throw new Error(`Failed to parse boilerplate response JSON: ${error}. Body was: ${bodyContent}`);
       }
+      ux.action.stop(ux.colorize('green', '✔ Fetched details'))
+      actionRunning = false;
 
       // Fetch the zip file from the download URL
+      ux.action.start('Downloading boilerplate')
+      actionRunning = true;
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
         throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
       }
 
       if (!zipResponse.headers.get('Content-Type')?.includes('application/zip')) {
-        throw new Error('Expected zip file from download URL')
+        throw new Error('Expected zip file from download URL, but received different content type.')
       }
+      ux.action.stop(ux.colorize('green', '✔ Downloaded'))
+      actionRunning = false;
 
+      ux.action.start('Extracting and setting up project')
+      actionRunning = true;
       const buffer = await zipResponse.arrayBuffer()
       const targetPath = path.join(process.cwd(), args.name)
 
       await extractAndRenameProject(buffer, args.name, targetPath)
+      ux.action.stop(ux.colorize('green', '✔ Project set up'))
+      actionRunning = false;
 
-      this.log('\nSuccessfully created Flutter project!')
-      this.log('\nNext steps:')
-      this.log(`1. cd ${args.name}`)
-      this.log('2. flutter pub get')
-      this.log('3. flutter run')
+      this.log(ux.colorize('green', '\n🎉 Successfully created Flutter project!'))
+
+      // Add link to Hungrimind docs
+      this.log(`Find documentation for this boilerplate at: ${ux.colorize('blue', 'https://hungrimind.com/boilerplate/introduction')}`)
+
+      // Mimic flutter create output for running the app
+      this.log('\nIn order to run your application:')
+      this.log(`  $ cd ${ux.colorize('cyan', args.name)}`)
+      this.log(`  $ ${ux.colorize('cyan', 'flutter run')}`)
+
     } catch (error) {
-      this.error(`Failed to create project: ${(error as Error).message}`)
+      if (actionRunning) {
+        ux.action.stop(ux.colorize('red', '✖ failed'))
+      }
+      this.error(ux.colorize('red', `Project creation failed: ${(error as Error).message}`), { exit: 1 })
     }
   }
 }
