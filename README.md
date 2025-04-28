@@ -20,7 +20,7 @@ $ npm install -g @hungrimind/hungrimind-cli
 $ hungrimind COMMAND
 running command...
 $ hungrimind (--version)
-@hungrimind/hungrimind-cli/0.0.5 linux-x64 node-v20.19.0
+@hungrimind/hungrimind-cli/0.0.6 linux-x64 node-v20.19.0
 $ hungrimind --help [COMMAND]
 USAGE
   $ hungrimind COMMAND
@@ -29,23 +29,9 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`hungrimind auth`](#hungrimind-auth)
 * [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
 * [`hungrimind help [COMMAND]`](#hungrimind-help-command)
-
-## `hungrimind login`
-
-Authenticate with GitHub
-
-```
-USAGE
-  $ hungrimind login
-
-DESCRIPTION
-  Authenticate with GitHub
-```
-
-_See code: [src/commands/auth.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.5/src/commands/auth.ts)_
+* [`hungrimind login`](#hungrimind-login)
 
 ## `hungrimind create flutter NAME`
 
@@ -65,7 +51,7 @@ DESCRIPTION
   Create a new Flutter project with Hungrimind boilerplate
 ```
 
-_See code: [src/commands/create/flutter.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.5/src/commands/create/flutter.ts)_
+_See code: [src/commands/create/flutter.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.6/src/commands/create/flutter.ts)_
 
 ## `hungrimind help [COMMAND]`
 
@@ -86,4 +72,18 @@ DESCRIPTION
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v6.2.27/src/commands/help.ts)_
+
+## `hungrimind login`
+
+Authenticate with GitHub
+
+```
+USAGE
+  $ hungrimind login
+
+DESCRIPTION
+  Authenticate with GitHub
+```
+
+_See code: [src/commands/login.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.6/src/commands/login.ts)_
 <!-- commandsstop -->
