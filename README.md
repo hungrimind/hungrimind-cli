@@ -5,8 +5,8 @@ A CLI created by the people over at Hungrimind
 
 
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/hungrimind-cli.svg)](https://npmjs.org/package/hungrimind-cli)
-[![Downloads/week](https://img.shields.io/npm/dw/hungrimind-cli.svg)](https://npmjs.org/package/hungrimind-cli)
+[![Version](https://img.shields.io/npm/v/hungrimind-cli.svg)](https://npmjs.org/package/@hungrimind/hungrimind-cli)
+[![Downloads/week](https://img.shields.io/npm/dw/hungrimind-cli.svg)](https://npmjs.org/package/@hungrimind/hungrimind-cli)
 
 
 <!-- toc -->
@@ -29,9 +29,12 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`hungrimind auth`](#hungrimind-auth)
-* [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
-* [`hungrimind help [COMMAND]`](#hungrimind-help-command)
+- [hungrimind-cli](#hungrimind-cli)
+- [Usage](#usage)
+- [Commands](#commands)
+  - [`hungrimind auth`](#hungrimind-auth)
+  - [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
+  - [`hungrimind help [COMMAND]`](#hungrimind-help-command)
 
 ## `hungrimind auth`
 
