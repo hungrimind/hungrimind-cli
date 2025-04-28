@@ -33,13 +33,13 @@ USAGE
 * [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
 * [`hungrimind help [COMMAND]`](#hungrimind-help-command)
 
-## `hungrimind auth`
+## `hungrimind login`
 
 Authenticate with GitHub
 
 ```
 USAGE
-  $ hungrimind auth
+  $ hungrimind login
 
 DESCRIPTION
   Authenticate with GitHub

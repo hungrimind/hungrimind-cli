@@ -5,13 +5,13 @@ import * as fs from 'fs/promises'
 import open from 'open'
 import {GITHUB_CLIENT_ID} from '../config.js'
 
-export default class Auth extends Command {
+export default class Login extends Command {
   static override description = 'Authenticate with GitHub'
 
   private async saveToken(token: string): Promise<void> {
     const configDir = path.join(os.homedir(), '.hungrimind')
     await fs.mkdir(configDir, {recursive: true})
-    await fs.writeFile(path.join(configDir, 'auth.json'), JSON.stringify({token}))
+    await fs.writeFile(path.join(configDir, 'Login.json'), JSON.stringify({token}))
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -45,7 +45,7 @@ export default class Auth extends Command {
       } = await deviceCodeResponse.json()
 
       // Step 2: Show instructions to user
-      this.log('\nTo authenticate, please follow these steps:')
+      this.log('\nTo login, please follow these steps:')
       this.log(`1. Copy this code: ${user_code}`)
       this.log(`2. Visit: ${verification_uri}`)
       this.log('3. Paste the code when prompted\n')

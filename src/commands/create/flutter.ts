@@ -49,7 +49,7 @@ export default class CreateFlutter extends Command {
       } catch (unlinkError) {
         this.log(`Warning: Could not remove auth file at ${configPath}: ${unlinkError}`)
       }
-      this.error('Authentication failed or token missing. Please run `hungrimind auth` to log in.')
+      this.error('Authentication failed or token missing. Please run `hungrimind login` to log in.')
     }
   }
 
