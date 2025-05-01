@@ -1,17 +1,17 @@
-import {Command, ux} from '@oclif/core'
+import { Command, ux } from '@oclif/core'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs/promises'
 import open from 'open'
-import {GITHUB_CLIENT_ID} from '../config.js'
+import { GITHUB_CLIENT_ID } from '../config.js'
 
 export default class Login extends Command {
   static override description = 'Authenticate with GitHub'
 
   private async saveToken(token: string): Promise<void> {
     const configDir = path.join(os.homedir(), '.hungrimind')
-    await fs.mkdir(configDir, {recursive: true})
-    await fs.writeFile(path.join(configDir, 'Login.json'), JSON.stringify({token}))
+    await fs.mkdir(configDir, { recursive: true })
+    await fs.writeFile(path.join(configDir, 'Auth.json'), JSON.stringify({ token }))
   }
 
   private async sleep(ms: number): Promise<void> {
