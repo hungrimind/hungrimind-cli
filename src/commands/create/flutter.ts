@@ -110,7 +110,6 @@ export default class CreateFlutter extends Command {
       // Fetch the zip file from the download URL
       ux.action.start('Downloading boilerplate')
       actionRunning = true;
-      this.log(`Downloading from ${data.downloadUrl}`)
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
         throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)

@@ -1,7 +1,7 @@
 {
   "name": "@hungrimind/hungrimind-cli",
   "description": "A CLI created by the people over at Hungrimind",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "author": "Robert Brunhage",
   "bin": {
     "hungrimind": "bin/run.js"
