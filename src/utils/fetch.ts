@@ -38,12 +38,12 @@ export async function fetchWithVerboseLogging(
     }
     // Mask Authorization header if it exists
     if (headersToLog['Authorization']) {
-        headersToLog['Authorization'] = '*** MASKED ***';
+      headersToLog['Authorization'] = '*** MASKED ***';
     }
 
     const requestOptionsToLog = {
-        ...options,
-        headers: headersToLog,
+      ...options,
+      headers: headersToLog,
     };
     // Avoid logging large bodies if necessary (optional)
     // if (requestOptionsToLog.body && typeof requestOptionsToLog.body === 'string' && requestOptionsToLog.body.length > 1000) {

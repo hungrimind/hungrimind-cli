@@ -1,38 +1,57 @@
 import * as fs from 'fs/promises'
-import * as fsCallback from 'fs'
 import * as path from 'path'
 import * as os from 'os'
-import {Extract} from 'unzipper'
+import AdmZip from 'adm-zip'
 
-export async function extractAndRenameProject(zipBuffer: ArrayBuffer, projectName: string, targetPath: string) {
-  const tempFile = path.join(os.tmpdir(), `flutter-boilerplate-${Date.now()}.zip`)
-  const tempDir = path.join(os.tmpdir(), `flutter-temp-${Date.now()}`)
+export async function extractAndRenameProject(projectName: string, zipResponse: Response) {
+  const zipBuffer = await zipResponse.arrayBuffer();
+  const targetPath = path.join(process.cwd(), projectName);
+
+  const tempFile = path.join(os.tmpdir(), `flutter-boilerplate-${Date.now()}.zip`);
+  const tempDir = path.join(os.tmpdir(), `flutter-temp-${Date.now()}`);
 
   try {
     // Save zip to temp file
-    await fs.writeFile(tempFile, Buffer.from(zipBuffer))
+    await fs.writeFile(tempFile, Buffer.from(zipBuffer));
 
     // Extract to temp directory
-    await fs.mkdir(tempDir, {recursive: true})
-    await new Promise((resolve, reject) => {
-      fsCallback.createReadStream(tempFile)
-        .pipe(Extract({ path: tempDir }))
-        .on('close', resolve)
-        .on('error', reject)
-    })
+    await fs.mkdir(tempDir, { recursive: true });
 
-    // Get extracted folder and move to target
-    const [extractedFolder] = await fs.readdir(tempDir)
-    const extractedPath = path.join(tempDir, extractedFolder)
-    await fs.mkdir(targetPath, {recursive: true})
-    await fs.rename(extractedPath, targetPath)
+    // Use adm-zip to extract
+    const zip = new AdmZip(tempFile);
+    zip.extractAllTo(tempDir, /*overwrite*/ true);
 
-    // Update project files
-    await updateProjectFiles(targetPath, projectName)
+    // Get the extracted folder (it should be the top-level folder)
+    const extractedFiles = await fs.readdir(tempDir, { withFileTypes: true });
+    const extractedFolder = extractedFiles.find(file => file.isDirectory())?.name;
+
+    if (!extractedFolder) {
+      throw new Error('No top-level directory found in the extracted ZIP file');
+    }
+
+    const extractedPath = path.join(tempDir, extractedFolder);
+
+    // Ensure that the targetPath is not the same as extractedPath
+    const targetDir = path.dirname(targetPath);
+    if (extractedPath === targetDir) {
+      throw new Error('Source and destination paths cannot be the same');
+    }
+
+    // Rename the folder to the new project name and move it to the target location
+    const renamedPath = path.join(targetDir, projectName);
+
+    // Use copy and remove instead of rename for cross-device compatibility
+    await fs.cp(extractedPath, renamedPath, { recursive: true });
+    // We can remove the original extracted path now that it's copied
+    await fs.rm(extractedPath, { recursive: true, force: true });
+
+    // Update project files in the new location
+    await updateProjectFiles(renamedPath, projectName);
+
   } finally {
     // Cleanup
-    await fs.unlink(tempFile).catch(() => {})
-    await fs.rm(tempDir, {recursive: true, force: true}).catch(() => {})
+    await fs.unlink(tempFile).catch(() => { });
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => { });
   }
 }
 

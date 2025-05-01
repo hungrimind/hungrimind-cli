@@ -110,6 +110,7 @@ export default class CreateFlutter extends Command {
       // Fetch the zip file from the download URL
       ux.action.start('Downloading boilerplate')
       actionRunning = true;
+      this.log(`Downloading from ${data.downloadUrl}`)
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
         throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
@@ -123,10 +124,8 @@ export default class CreateFlutter extends Command {
 
       ux.action.start('Extracting and setting up project')
       actionRunning = true;
-      const buffer = await zipResponse.arrayBuffer()
-      const targetPath = path.join(process.cwd(), args.name)
 
-      await extractAndRenameProject(buffer, args.name, targetPath)
+      await extractAndRenameProject(args.name, zipResponse)
       ux.action.stop(ux.colorize('green', '✔ Project set up'))
       actionRunning = false;
 
