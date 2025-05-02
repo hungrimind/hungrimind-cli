@@ -7,7 +7,7 @@ export async function extractAndRenameProject(projectName: string, zipResponse: 
   const zipBuffer = await zipResponse.arrayBuffer();
   const targetPath = path.join(process.cwd(), projectName);
 
-  const tempFile = path.join(os.tmpdir(), `flutter-boilerplate-${Date.now()}.zip`);
+  const tempFile = path.join(os.tmpdir(), `flutter-kit-${Date.now()}.zip`);
   const tempDir = path.join(os.tmpdir(), `flutter-temp-${Date.now()}`);
 
   try {

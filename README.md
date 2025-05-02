@@ -29,13 +29,16 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
-* [`hungrimind help [COMMAND]`](#hungrimind-help-command)
-* [`hungrimind login`](#hungrimind-login)
+- [hungrimind-cli](#hungrimind-cli)
+- [Usage](#usage)
+- [Commands](#commands)
+  - [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
+  - [`hungrimind help [COMMAND]`](#hungrimind-help-command)
+  - [`hungrimind login`](#hungrimind-login)
 
 ## `hungrimind create flutter NAME`
 
-Create a new Flutter project with Hungrimind boilerplate
+Create a new Flutter project with Hungrimind Flutter Kit
 
 ```
 USAGE
@@ -48,7 +51,7 @@ FLAGS
   -v, --verbose  Enable verbose output for debugging
 
 DESCRIPTION
-  Create a new Flutter project with Hungrimind boilerplate
+  Create a new Flutter project with Hungrimind Flutter kit
 ```
 
 _See code: [src/commands/create/flutter.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.9/src/commands/create/flutter.ts)_

@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../../config.js'
 import { extractAndRenameProject } from '../../utils/flutter.js'
 import { fetchWithVerboseLogging } from '../../utils/fetch.js'
 
-interface BoilerplateResponse {
+interface FlutterKitResponse {
   downloadUrl: string
 }
 
@@ -15,7 +15,7 @@ interface AuthConfig {
 }
 
 export default class CreateFlutter extends Command {
-  static override description = 'Create a new Flutter project with Hungrimind boilerplate'
+  static override description = 'Create a new Flutter project with the Hungrimind Flutter Kit'
 
   static flags = {
     verbose: Flags.boolean({ char: 'v', description: 'Enable verbose output for debugging' }),
@@ -60,10 +60,10 @@ export default class CreateFlutter extends Command {
     let actionRunning = false;
 
     try {
-      ux.action.start('Fetching boilerplate details')
+      ux.action.start('Fetching Flutter Kit details')
       actionRunning = true;
       const token = await this.getStoredToken()
-      const endpoint = '/flutter/boilerplate'
+      const endpoint = '/kit/flutter'
       const url = `${API_BASE_URL}${endpoint}`
 
       // Prepare fetch options
@@ -92,23 +92,23 @@ export default class CreateFlutter extends Command {
         if (flags.verbose) {
           this.log(`Error Body: ${errorBody}`);
         }
-        throw new Error(`Failed to fetch boilerplate: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`);
+        throw new Error(`Failed to fetch Flutter Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`);
       }
 
       // Parse JSON data
-      let data: BoilerplateResponse;
+      let data: FlutterKitResponse;
       try {
         const bodyToParse = responseText ?? await response.json();
-        data = typeof bodyToParse === 'string' ? JSON.parse(bodyToParse) as BoilerplateResponse : bodyToParse as BoilerplateResponse;
+        data = typeof bodyToParse === 'string' ? JSON.parse(bodyToParse) as FlutterKitResponse : bodyToParse as FlutterKitResponse;
       } catch (error) {
         const bodyContent = responseText ?? '[Response body not available or already consumed]';
-        throw new Error(`Failed to parse boilerplate response JSON: ${error}. Body was: ${bodyContent}`);
+        throw new Error(`Failed to parse Flutter Kit response JSON: ${error}. Body was: ${bodyContent}`);
       }
       ux.action.stop(ux.colorize('green', '✔ Fetched details'))
       actionRunning = false;
 
       // Fetch the zip file from the download URL
-      ux.action.start('Downloading boilerplate')
+      ux.action.start('Downloading Flutter Kit')
       actionRunning = true;
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
@@ -131,7 +131,7 @@ export default class CreateFlutter extends Command {
       this.log(ux.colorize('green', '\n🎉 Successfully created Flutter project!'))
 
       // Add link to Hungrimind docs
-      this.log(`Find documentation for this boilerplate at: ${ux.colorize('blue', 'https://hungrimind.com/boilerplate/introduction')}`)
+      this.log(`Find documentation for the Flutter Kit at: ${ux.colorize('blue', 'https://hungrimind.com/kit/flutter/introduction')}`)
 
       // Mimic flutter create output for running the app
       this.log('\nIn order to run your application:')
