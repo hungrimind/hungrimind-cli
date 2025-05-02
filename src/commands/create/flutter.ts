@@ -2,7 +2,7 @@ import { Args, Command, Flags, ux } from '@oclif/core'
 import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
-import { API_BASE_URL } from '../../config.js'
+import { API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME } from '../../config.js'
 import { extractAndRenameProject } from '../../utils/flutter.js'
 import { fetchWithVerboseLogging } from '../../utils/fetch.js'
 
@@ -35,7 +35,7 @@ export default class CreateFlutter extends Command {
   }
 
   private async getStoredToken(): Promise<string> {
-    const configPath = path.join(os.homedir(), '.hungrimind', 'auth.json')
+    const configPath = path.join(os.homedir(), ROOT_FOLDER_NAME, AUTH_FILE_NAME)
     try {
       const config = JSON.parse(await fs.readFile(configPath, 'utf8')) as AuthConfig
       if (!config.token) {

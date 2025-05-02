@@ -3,15 +3,15 @@ import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs/promises'
 import open from 'open'
-import { GITHUB_CLIENT_ID } from '../config.js'
+import { AUTH_FILE_NAME, GITHUB_CLIENT_ID, ROOT_FOLDER_NAME } from '../config.js'
 
 export default class Login extends Command {
   static override description = 'Authenticate with GitHub'
 
   private async saveToken(token: string): Promise<void> {
-    const configDir = path.join(os.homedir(), '.hungrimind')
+    const configDir = path.join(os.homedir(), ROOT_FOLDER_NAME)
     await fs.mkdir(configDir, { recursive: true })
-    await fs.writeFile(path.join(configDir, 'Auth.json'), JSON.stringify({ token }))
+    await fs.writeFile(path.join(configDir, AUTH_FILE_NAME), JSON.stringify({ token }))
   }
 
   private async sleep(ms: number): Promise<void> {
