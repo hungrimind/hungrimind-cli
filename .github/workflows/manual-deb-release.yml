@@ -1,0 +1,61 @@
+name: Manual Debian Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'The git tag to build the Debian package for (e.g., v1.0.0). A release will be created for this tag if it does not already exist, or assets will be added to an existing release.'
+        required: true
+        type: string
+
+jobs:
+  build_and_upload_deb:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create a release or upload assets
+
+    steps:
+      - name: Checkout code for the specified tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_tag }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: latest # Or your project's specific Node version, e.g., '18.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm run build # Assumes you have a TypeScript/build step
+
+      # If oclif prepack (oclif manifest) is critical and not covered by 'pack deb', uncomment
+      # - name: Prepare for packaging (oclif manifest)
+      #   run: pnpm run prepack # Or specifically: npx oclif manifest
+
+      - name: Install oclif (globally for the runner)
+        run: pnpm add -g oclif # Ensures oclif CLI is available
+
+      - name: Package Debian (x64)
+        env:
+          OCLIF_DEB_TARGETS: linux-x64 # Specify only linux-x64
+        run: npx oclif pack deb
+
+      - name: Upload Debian package to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./dist/deb/*.deb # Finds the generated .deb file
+          asset_name: hungrimind-cli_${{ github.event.inputs.release_tag }}_amd64.deb # Names the asset using the input tag
+          tag: ${{ github.event.inputs.release_tag }} # Associates asset with this tag; creates release if it doesn't exist
+          overwrite: true # Replaces the asset if it already exists for this release
+          # release_name: "Release ${{ github.event.inputs.release_tag }}" # Optional: name for the release if created
+          # body: "Debian package for ${{ github.event.inputs.release_tag }}" # Optional: body for the release if created 
