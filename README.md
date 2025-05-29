@@ -20,7 +20,7 @@ $ npm install -g @hungrimind/hungrimind-cli
 $ hungrimind COMMAND
 running command...
 $ hungrimind (--version)
-@hungrimind/hungrimind-cli/0.0.11 linux-x64 node-v20.19.1
+@hungrimind/hungrimind-cli/0.0.12 linux-x64 node-v20.19.1
 $ hungrimind --help [COMMAND]
 USAGE
   $ hungrimind COMMAND
@@ -30,6 +30,7 @@ USAGE
 # Commands
 <!-- commands -->
 * [`hungrimind create flutter NAME`](#hungrimind-create-flutter-name)
+* [`hungrimind create kubernetes NAME`](#hungrimind-create-kubernetes-name)
 * [`hungrimind help [COMMAND]`](#hungrimind-help-command)
 * [`hungrimind login`](#hungrimind-login)
 
@@ -51,7 +52,27 @@ DESCRIPTION
   Create a new Flutter project with the Hungrimind Flutter Kit
 ```
 
-_See code: [src/commands/create/flutter.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.11/src/commands/create/flutter.ts)_
+_See code: [src/commands/create/flutter.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.12/src/commands/create/flutter.ts)_
+
+## `hungrimind create kubernetes NAME`
+
+Create a new Kubernetes project with the Hungrimind Kubernetes Kit
+
+```
+USAGE
+  $ hungrimind create kubernetes NAME [-v]
+
+ARGUMENTS
+  NAME  Name of the Kubernetes folder (lowercase with underscores, e.g., hungrimind_infrastructure)
+
+FLAGS
+  -v, --verbose  Enable verbose output for debugging
+
+DESCRIPTION
+  Create a new Kubernetes project with the Hungrimind Kubernetes Kit
+```
+
+_See code: [src/commands/create/kubernetes.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.12/src/commands/create/kubernetes.ts)_
 
 ## `hungrimind help [COMMAND]`
 
@@ -85,5 +106,5 @@ DESCRIPTION
   Authenticate with GitHub
 ```
 
-_See code: [src/commands/login.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.11/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.12/src/commands/login.ts)_
 <!-- commandsstop -->
