@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as os from 'os'
 import AdmZip from 'adm-zip'
 
-export async function extractAndRenameProject(projectName: string, zipResponse: Response) {
+export async function extractAndRenameProject(projectName: string, zipResponse: Response): Promise<string> {
   const zipBuffer = await zipResponse.arrayBuffer();
   const targetPath = path.join(process.cwd(), projectName);
 
@@ -45,9 +45,7 @@ export async function extractAndRenameProject(projectName: string, zipResponse: 
     // We can remove the original extracted path now that it's copied
     await fs.rm(extractedPath, { recursive: true, force: true });
 
-    // Update project files in the new location
-    await updateProjectFiles(renamedPath, projectName);
-
+    return renamedPath;
   } finally {
     // Cleanup
     await fs.unlink(tempFile).catch(() => { });
@@ -55,7 +53,7 @@ export async function extractAndRenameProject(projectName: string, zipResponse: 
   }
 }
 
-async function updateProjectFiles(projectPath: string, newName: string) {
+export async function updateProjectFiles(projectPath: string, newName: string) {
   const camelCaseName = newName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
 
   const processFile = async (filePath: string) => {

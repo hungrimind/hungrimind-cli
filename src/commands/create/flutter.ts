@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
 import { API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME } from '../../config.js'
-import { extractAndRenameProject } from '../../utils/flutter.js'
+import { extractAndRenameProject, updateProjectFiles } from '../../utils/flutter.js'
 import { fetchWithVerboseLogging } from '../../utils/fetch.js'
 
 interface FlutterKitResponse {
@@ -124,7 +124,8 @@ export default class CreateFlutter extends Command {
       ux.action.start('Extracting and setting up project')
       actionRunning = true;
 
-      await extractAndRenameProject(args.name, zipResponse)
+      const projectPath = await extractAndRenameProject(args.name, zipResponse)
+      await updateProjectFiles(projectPath, args.name);
       ux.action.stop(ux.colorize('green', '✔ Project set up'))
       actionRunning = false;
 
