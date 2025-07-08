@@ -1,21 +1,21 @@
-import { Command, ux } from '@oclif/core'
+import {Command, ux} from '@oclif/core'
 import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'fs/promises'
 import open from 'open'
-import { AUTH_FILE_NAME, GITHUB_CLIENT_ID, ROOT_FOLDER_NAME } from '../config.js'
+import {AUTH_FILE_NAME, GITHUB_CLIENT_ID, ROOT_FOLDER_NAME} from '../config.js'
 
 export default class Login extends Command {
   static override description = 'Authenticate with GitHub'
 
   private async saveToken(token: string): Promise<void> {
     const configDir = path.join(os.homedir(), ROOT_FOLDER_NAME)
-    await fs.mkdir(configDir, { recursive: true })
-    await fs.writeFile(path.join(configDir, AUTH_FILE_NAME), JSON.stringify({ token }))
+    await fs.mkdir(configDir, {recursive: true})
+    await fs.writeFile(path.join(configDir, AUTH_FILE_NAME), JSON.stringify({token}))
   }
 
   private async sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   public async run(): Promise<void> {
@@ -24,7 +24,7 @@ export default class Login extends Command {
       const deviceCodeResponse = await fetch('https://github.com/login/device/code', {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -38,20 +38,15 @@ export default class Login extends Command {
         return
       }
 
-      const deviceCodeJson = await deviceCodeResponse.json() as {
-        device_code: string;
-        user_code: string;
-        verification_uri: string;
-        expires_in: number;
-        interval: number;
+      const deviceCodeJson = (await deviceCodeResponse.json()) as {
+        device_code: string
+        user_code: string
+        verification_uri: string
+        expires_in: number
+        interval: number
       }
 
-      const {
-        device_code,
-        user_code,
-        verification_uri,
-        interval,
-      } = deviceCodeJson
+      const {device_code, user_code, verification_uri, interval} = deviceCodeJson
 
       // Step 2: Show instructions to user
       this.log(ux.colorize('blue', 'To complete the GitHub login process:\n'))
@@ -71,7 +66,7 @@ export default class Login extends Command {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
           method: 'POST',
           headers: {
-            'Accept': 'application/json',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -85,7 +80,7 @@ export default class Login extends Command {
           this.error('Failed to check authorization status with GitHub')
         }
 
-        const data = await tokenResponse.json() as { error?: string, access_token?: string }
+        const data = (await tokenResponse.json()) as {error?: string; access_token?: string}
 
         if (data.error === 'authorization_pending') {
           await this.sleep(interval * 1000)

@@ -1,7 +1,7 @@
 {
   "name": "@hungrimind/hungrimind-cli",
   "description": "A CLI created by the people over at Hungrimind",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": "Robert Brunhage",
   "bin": {
     "hungrimind": "bin/run.js"
@@ -42,6 +42,7 @@
   "files": [
     "./bin",
     "./dist",
+    "./templates",
     "./oclif.manifest.json"
   ],
   "homepage": "https://github.com/hungrimind/hungrimind-cli",

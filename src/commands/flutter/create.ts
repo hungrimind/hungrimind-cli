@@ -1,12 +1,12 @@
-import { Args, Command, Flags, ux } from '@oclif/core'
+import {Args, Command, Flags, ux} from '@oclif/core'
 import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
-import { API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME } from '../../config.js'
-import { extractAndRenameProject, updateProjectFiles } from '../../utils/flutter.js'
-import { fetchWithVerboseLogging } from '../../utils/fetch.js'
+import {API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME} from '../../config.js'
+import {extractAndRenameProject, updateProjectFiles} from '../../utils/flutter.js'
+import {fetchWithVerboseLogging} from '../../utils/fetch.js'
 
-interface FlutterKitResponse {
+interface FlutterCreateKitResponse {
   downloadUrl: string
 }
 
@@ -14,11 +14,11 @@ interface AuthConfig {
   token: string
 }
 
-export default class CreateFlutter extends Command {
+export default class FlutterCreate extends Command {
   static override description = 'Create a new Flutter project with the Hungrimind Flutter Kit'
 
   static flags = {
-    verbose: Flags.boolean({ char: 'v', description: 'Enable verbose output for debugging' }),
+    verbose: Flags.boolean({char: 'v', description: 'Enable verbose output for debugging'}),
   }
 
   static args = {
@@ -49,19 +49,22 @@ export default class CreateFlutter extends Command {
       } catch (unlinkError) {
         this.warn(`Could not remove auth file at ${configPath}: ${unlinkError}`)
       }
-      this.error(ux.colorize('red', 'Authentication failed or token missing. Please run `hungrimind login` to log in.'), { exit: 1 })
+      this.error(
+        ux.colorize('red', 'Authentication failed or token missing. Please run `hungrimind login` to log in.'),
+        {exit: 1},
+      )
     }
   }
 
   public async run(): Promise<void> {
-    const { args, flags } = await this.parse(CreateFlutter)
+    const {args, flags} = await this.parse(FlutterCreate)
     this.log(ux.colorize('blue', `Creating Flutter project: ${ux.colorize('cyan', args.name)}`))
 
-    let actionRunning = false;
+    let actionRunning = false
 
     try {
       ux.action.start('Fetching Flutter Kit details')
-      actionRunning = true;
+      actionRunning = true
       const token = await this.getStoredToken()
       const endpoint = '/kit/flutter'
       const url = `${API_BASE_URL}${endpoint}`
@@ -73,43 +76,46 @@ export default class CreateFlutter extends Command {
           'Content-Type': 'application/json',
           'x-auth-token': token,
         },
-      };
+      }
 
       // Use the wrapper function for the API call
-      const { response, responseText } = await fetchWithVerboseLogging(
+      const {response, responseText} = await fetchWithVerboseLogging(
         url,
         fetchOptions,
         flags.verbose,
-        this.log.bind(this)
-      );
+        this.log.bind(this),
+      )
 
       if (flags.verbose) {
         this.log(`Response status: ${response.status}`)
       }
 
       if (!response.ok) {
-        const errorBody = responseText ?? await response.text();
+        const errorBody = responseText ?? (await response.text())
         if (flags.verbose) {
-          this.log(`Error Body: ${errorBody}`);
+          this.log(`Error Body: ${errorBody}`)
         }
-        throw new Error(`Failed to fetch Flutter Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`);
+        throw new Error(`Failed to fetch Flutter Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`)
       }
 
       // Parse JSON data
-      let data: FlutterKitResponse;
+      let data: FlutterCreateKitResponse
       try {
-        const bodyToParse = responseText ?? await response.json();
-        data = typeof bodyToParse === 'string' ? JSON.parse(bodyToParse) as FlutterKitResponse : bodyToParse as FlutterKitResponse;
+        const bodyToParse = responseText ?? (await response.json())
+        data =
+          typeof bodyToParse === 'string'
+            ? (JSON.parse(bodyToParse) as FlutterCreateKitResponse)
+            : (bodyToParse as FlutterCreateKitResponse)
       } catch (error) {
-        const bodyContent = responseText ?? '[Response body not available or already consumed]';
-        throw new Error(`Failed to parse Flutter Kit response JSON: ${error}. Body was: ${bodyContent}`);
+        const bodyContent = responseText ?? '[Response body not available or already consumed]'
+        throw new Error(`Failed to parse Flutter Kit response JSON: ${error}. Body was: ${bodyContent}`)
       }
       ux.action.stop(ux.colorize('green', '✔ Fetched details'))
-      actionRunning = false;
+      actionRunning = false
 
       // Fetch the zip file from the download URL
       ux.action.start('Downloading Flutter Kit')
-      actionRunning = true;
+      actionRunning = true
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
         throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
@@ -119,31 +125,35 @@ export default class CreateFlutter extends Command {
         throw new Error('Expected zip file from download URL, but received different content type.')
       }
       ux.action.stop(ux.colorize('green', '✔ Downloaded'))
-      actionRunning = false;
+      actionRunning = false
 
       ux.action.start('Extracting and setting up project')
-      actionRunning = true;
+      actionRunning = true
 
       const projectPath = await extractAndRenameProject(args.name, zipResponse)
-      await updateProjectFiles(projectPath, args.name);
+      await updateProjectFiles(projectPath, args.name)
       ux.action.stop(ux.colorize('green', '✔ Project set up'))
-      actionRunning = false;
+      actionRunning = false
 
       this.log(ux.colorize('green', '\n🎉 Successfully created Flutter project!'))
 
       // Add link to Hungrimind docs
-      this.log(`Find documentation for the Flutter Kit at: ${ux.colorize('blue', 'https://hungrimind.com/kit/flutter/introduction')}`)
+      this.log(
+        `Find documentation for the Flutter Kit at: ${ux.colorize(
+          'blue',
+          'https://hungrimind.com/kit/flutter/introduction',
+        )}`,
+      )
 
       // Mimic flutter create output for running the app
       this.log('\nIn order to run your application:')
       this.log(`  $ cd ${ux.colorize('cyan', args.name)}`)
       this.log(`  $ ${ux.colorize('cyan', 'flutter run')}`)
-
     } catch (error) {
       if (actionRunning) {
         ux.action.stop(ux.colorize('red', '✖ failed'))
       }
-      this.error(ux.colorize('red', `Project creation failed: ${(error as Error).message}`), { exit: 1 })
+      this.error(ux.colorize('red', `Project creation failed: ${(error as Error).message}`), {exit: 1})
     }
   }
 }
