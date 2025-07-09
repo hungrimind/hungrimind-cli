@@ -1,5 +1,5 @@
 name: {{app-name}}
-host: {{app-name}}.{{your-domain}}
+host: {{your-domain}}
 image:
   repository: {{docker-username}}/{{app-name}}
   tag: latest 

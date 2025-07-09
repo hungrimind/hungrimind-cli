@@ -5,7 +5,8 @@ import {Command, ux} from '@oclif/core'
 export interface AppConfig {
   appName: string
   appDescription: string
-  domain: string
+  prodDomain: string
+  devDomain: string
   dockerUsername: string
 }
 
@@ -45,8 +46,19 @@ export async function promptForAppConfig(command: Command): Promise<AppConfig> {
     },
     {
       type: 'input',
-      name: 'domain',
-      message: 'Your domain (e.g., yourdomain.com):',
+      name: 'prodDomain',
+      message: 'Production domain (e.g., playing.hungrimind.com):',
+      validate: (input: string) => {
+        if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(input)) {
+          return 'Please enter a valid domain name'
+        }
+        return true
+      },
+    },
+    {
+      type: 'input',
+      name: 'devDomain',
+      message: 'Development domain (e.g., playing-dev.hungrimind.com):',
       validate: (input: string) => {
         if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(input)) {
           return 'Please enter a valid domain name'
@@ -65,7 +77,8 @@ export async function promptForAppConfig(command: Command): Promise<AppConfig> {
   return {
     appName: answers.appName,
     appDescription: answers.appDescription,
-    domain: answers.domain,
+    prodDomain: answers.prodDomain,
+    devDomain: answers.devDomain,
     dockerUsername: answers.dockerUsername,
   }
 }
@@ -74,7 +87,8 @@ export function replacePlaceholders(content: string, config: AppConfig): string 
   return content
     .replace(/\{\{app-name\}\}/g, config.appName)
     .replace(/\{\{app-description\}\}/g, config.appDescription)
-    .replace(/\{\{your-domain\}\}/g, config.domain)
+    .replace(/\{\{your-domain\}\}/g, config.prodDomain)
+    .replace(/\{\{dev-domain\}\}/g, config.devDomain)
     .replace(/\{\{docker-username\}\}/g, config.dockerUsername)
 }
 

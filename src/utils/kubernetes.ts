@@ -262,57 +262,33 @@ export async function promptAndRunFirstInstall(
   try {
     await fs.access(firstInstallScriptPath, fs.constants.F_OK) // Check if script exists
 
-    command.log(ux.colorize('yellow', '\n--- Optional Next Step ---'))
+    command.log(ux.colorize('yellow', '\n--- Next Step ---'))
     const {runScript} = await inquirer.prompt([
       {
         name: 'runScript',
         type: 'confirm',
-        message: `A 'first_install.sh' script is available. This script can help set up k3s, Helm, and other required services on your cluster. Would you like to run it now?`,
-        default: false,
+        message: `You have now cloned all the Kubernetes Kit files. This includes ‘first_install.sh’ which will deploy the preconfigured applications to your cluster. Do you want to run it? (You can also run it later with ‘hungrimind kubernetes install‘)`,
+        default: true,
       },
     ])
 
     if (runScript) {
-      command.log(ux.colorize('blue', `Attempting to run 'first_install.sh'...`))
+      command.log(ux.colorize('blue', `\nRunning 'first_install.sh'...\n`))
+
       try {
         // Ensure the script is executable
         await fs.chmod(firstInstallScriptPath, 0o755)
-        command.log(ux.colorize('dim', `Ensured '${firstInstallScriptPath}' has execute permissions.`))
 
-        // Run the script
-        ux.action.start(ux.colorize('blue', `Executing 'first_install.sh' in '${projectDirName}'`))
-        const scriptExecution = childProcess.spawn('./first_install.sh', [], {
-          cwd: path.resolve(projectDirName), // Run from within the project folder
-          stdio: 'inherit', // Stream stdout/stderr to console
-          shell: true, // Use shell to execute, handles shebangs etc.
+        // Use execSync for simpler execution with real-time output
+        childProcess.execSync('./first_install.sh', {
+          cwd: path.resolve(projectDirName),
+          stdio: 'inherit',
         })
 
-        await new Promise<void>((resolve, reject) => {
-          scriptExecution.on('close', (code) => {
-            if (code === 0) {
-              ux.action.stop(ux.colorize('green', `✔ 'first_install.sh' executed successfully.`))
-              resolve()
-            } else {
-              ux.action.stop(ux.colorize('red', `✖ 'first_install.sh' failed with exit code ${code}.`))
-              reject(new Error(`Script failed with exit code ${code}. Check output above for details.`))
-            }
-          })
-          scriptExecution.on('error', (err) => {
-            ux.action.stop(ux.colorize('red', `✖ Failed to start 'first_install.sh'.`))
-            reject(err)
-          })
-        })
-      } catch (scriptError) {
-        if (ux.action.running) {
-          ux.action.stop(ux.colorize('red', '✖ failed'))
-        }
+        command.log(ux.colorize('green', `\n✔ 'first_install.sh' executed successfully!`))
+      } catch (scriptError: any) {
         command.warn(
-          ux.colorize(
-            'red',
-            `Could not execute 'first_install.sh': ${
-              scriptError instanceof Error ? scriptError.message : String(scriptError)
-            }`,
-          ),
+          ux.colorize('red', `\n✖ 'first_install.sh' failed with exit code ${scriptError.status || 'unknown'}.`),
         )
         command.log(ux.colorize('dim', `You may need to run it manually: cd ${projectDirName} && ./first_install.sh`))
       }

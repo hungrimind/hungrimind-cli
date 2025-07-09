@@ -139,6 +139,9 @@ export default class KubernetesCreate extends Command {
       // New: Prompt for required placeholder replacements (blocking)
       await promptForRequiredPlaceholders(this, args.name)
 
+      // Prompt to run first_install.sh
+      await promptAndRunFirstInstall(this, args.name)
+
       this.log(
         ux.colorize('green', `\n🎉 Successfully created Kubernetes project '${ux.colorize('cyan', args.name)}'!`),
       )
@@ -150,13 +153,6 @@ export default class KubernetesCreate extends Command {
           'https://hungrimind.com/kit/kubernetes/introduction',
         )}`,
       )
-
-      // Prompt to run first_install.sh
-      await promptAndRunFirstInstall(this, args.name)
-
-      this.log('\nNext steps:')
-      this.log(`  $ cd ${ux.colorize('cyan', args.name)}`)
-      this.log(`  Commit your changes to version control and setup environment variables.`)
     } catch (error) {
       if (actionRunning) {
         ux.action.stop(ux.colorize('red', '✖ failed'))
