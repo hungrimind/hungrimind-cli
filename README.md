@@ -20,7 +20,7 @@ $ npm install -g @hungrimind/hungrimind-cli
 $ hungrimind COMMAND
 running command...
 $ hungrimind (--version)
-@hungrimind/hungrimind-cli/0.0.14 linux-x64 node-v20.19.3
+@hungrimind/hungrimind-cli/1.0.0 linux-x64 node-v20.20.0
 $ hungrimind --help [COMMAND]
 USAGE
   $ hungrimind COMMAND
@@ -43,19 +43,21 @@ Create a new Flutter project with the Hungrimind Flutter Kit
 
 ```
 USAGE
-  $ hungrimind flutter create NAME [-v]
+  $ hungrimind flutter create NAME [--local <value>] [--org <value>] [-v]
 
 ARGUMENTS
   NAME  Name of the Flutter application (lowercase with underscores, e.g., my_app)
 
 FLAGS
-  -v, --verbose  Enable verbose output for debugging
+  -v, --verbose        Enable verbose output for debugging
+      --local=<value>  Path to a local kit directory (skips API download, useful for development)
+      --org=<value>    [default: com.example] Organization identifier for the project (e.g., com.mycompany)
 
 DESCRIPTION
   Create a new Flutter project with the Hungrimind Flutter Kit
 ```
 
-_See code: [src/commands/flutter/create.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.14/src/commands/flutter/create.ts)_
+_See code: [src/commands/flutter/create.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/flutter/create.ts)_
 
 ## `hungrimind help [COMMAND]`
 
@@ -92,7 +94,7 @@ EXAMPLES
   $ hungrimind kubernetes add app
 ```
 
-_See code: [src/commands/kubernetes/add/app.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.14/src/commands/kubernetes/add/app.ts)_
+_See code: [src/commands/kubernetes/add/app.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/kubernetes/add/app.ts)_
 
 ## `hungrimind kubernetes configure [DIRECTORY]`
 
@@ -109,7 +111,7 @@ DESCRIPTION
   Configure placeholders in a Kubernetes project (allows skipping any placeholder)
 ```
 
-_See code: [src/commands/kubernetes/configure.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.14/src/commands/kubernetes/configure.ts)_
+_See code: [src/commands/kubernetes/configure.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/kubernetes/configure.ts)_
 
 ## `hungrimind kubernetes create NAME`
 
@@ -129,7 +131,7 @@ DESCRIPTION
   Create a new Kubernetes project with the Hungrimind Kubernetes Kit and configure required settings
 ```
 
-_See code: [src/commands/kubernetes/create.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.14/src/commands/kubernetes/create.ts)_
+_See code: [src/commands/kubernetes/create.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/kubernetes/create.ts)_
 
 ## `hungrimind kubernetes install [DIRECTORY]`
 
@@ -146,7 +148,7 @@ DESCRIPTION
   Install/deploy a Kubernetes project after validating required configuration
 ```
 
-_See code: [src/commands/kubernetes/install.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.14/src/commands/kubernetes/install.ts)_
+_See code: [src/commands/kubernetes/install.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/kubernetes/install.ts)_
 
 ## `hungrimind login`
 
@@ -160,5 +162,5 @@ DESCRIPTION
   Authenticate with GitHub
 ```
 
-_See code: [src/commands/login.ts](https://github.com/hungrimind/hungrimind-cli/blob/v0.0.14/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/login.ts)_
 <!-- commandsstop -->
