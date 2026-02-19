@@ -1,10 +1,10 @@
 import {Command, ux} from '@oclif/core'
-import {promptForAppConfig, createAppStructure} from '../../../utils/kubernetes-templates.js'
+
+import {createAppStructure, promptForAppConfig} from '../../../utils/kubernetes-templates.js'
 
 export default class KubernetesAddApp extends Command {
   static override description = 'Create a new Kubernetes app with Helm chart and GitHub Actions workflow'
-
-  static override examples = ['$ hungrimind kubernetes add app']
+static override examples = ['$ hungrimind kubernetes add app']
 
   public async run(): Promise<void> {
     this.log(ux.colorize('blue', '✨ Adding a new Kubernetes app'))

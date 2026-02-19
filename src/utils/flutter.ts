@@ -1,27 +1,30 @@
-import * as fs from 'fs/promises'
-import * as path from 'path'
-import * as os from 'os'
-import {execSync} from 'child_process'
 import AdmZip from 'adm-zip'
+import {execSync} from 'node:child_process'
+import * as fs from 'node:fs/promises'
+import * as os from 'node:os'
+import path from 'node:path'
+import {parse, stringify} from 'yaml'
 
 /** Directories that flutter create generates and we should not overlay from the kit */
 const NATIVE_PLATFORM_DIRS = ['android', 'ios', 'macos', 'linux', 'windows', 'web']
 
 /** Files/dirs from the kit repo that should not be copied to the output project */
-const EXCLUDED_FROM_OVERLAY = [
-  ...NATIVE_PLATFORM_DIRS,
+const EXCLUDED_FROM_OVERLAY = new Set([
+  '.dart_tool',
+  '.flutter-plugins-dependencies',
   '.git',
   '.github',
-  '.dart_tool',
   '.metadata',
-  '.flutter-plugins-dependencies',
   'build',
   'pubspec.lock',
-]
+  'pubspec.yaml', // Merged separately, not overlaid
+  ...NATIVE_PLATFORM_DIRS,
+])
 
 /**
  * Extracts the kit ZIP to a temporary directory and returns the path to the extracted kit.
  */
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 export async function extractKitToTemp(zipResponse: Response): Promise<{kitPath: string; tempDir: string}> {
   const zipBuffer = await zipResponse.arrayBuffer()
   const tempFile = path.join(os.tmpdir(), `flutter-kit-${Date.now()}.zip`)
@@ -67,24 +70,22 @@ export async function overlayKitFiles(projectPath: string, kitPath: string, proj
   // This avoids leftover files like widget_test.dart that reference the default MyApp.
   for (const dir of ['lib', 'test']) {
     const defaultDir = path.join(projectPath, dir)
-    await fs.rm(defaultDir, {recursive: true, force: true}).catch(() => {})
+    // eslint-disable-next-line no-await-in-loop
+    await fs.rm(defaultDir, {force: true, recursive: true}).catch(() => {})
   }
 
   const entries = await fs.readdir(kitPath, {withFileTypes: true})
 
   for (const entry of entries) {
-    if (EXCLUDED_FROM_OVERLAY.includes(entry.name)) continue
+    if (EXCLUDED_FROM_OVERLAY.has(entry.name)) continue
     // Skip hidden files that aren't relevant
-    if (entry.name.startsWith('.') && !['.gitignore', '.vscode', '.claude', '.cursor'].includes(entry.name)) continue
+    if (entry.name.startsWith('.') && !['.claude', '.cursor', '.gitignore', '.vscode'].includes(entry.name)) continue
 
     const srcPath = path.join(kitPath, entry.name)
     const destPath = path.join(projectPath, entry.name)
 
-    if (entry.isDirectory()) {
-      await fs.cp(srcPath, destPath, {recursive: true, force: true})
-    } else {
-      await fs.copyFile(srcPath, destPath)
-    }
+    // eslint-disable-next-line no-await-in-loop, n/no-unsupported-features/node-builtins
+    await (entry.isDirectory() ? fs.cp(srcPath, destPath, {force: true, recursive: true}) : fs.copyFile(srcPath, destPath));
   }
 
   // Update project name references in all overlaid files
@@ -92,15 +93,50 @@ export async function overlayKitFiles(projectPath: string, kitPath: string, proj
 }
 
 /**
+ * Merges the kit's pubspec.yaml dependencies into the flutter create-generated pubspec.
+ * The generated pubspec already has the correct project name, so no renaming is needed.
+ * We extract dependencies, dev_dependencies, environment, and flutter config from the kit.
+ */
+export async function mergePubspec(projectPath: string, kitPath: string): Promise<void> {
+  const generatedPubspecPath = path.join(projectPath, 'pubspec.yaml')
+  const kitPubspecPath = path.join(kitPath, 'pubspec.yaml')
+
+  const generated = parse(await fs.readFile(generatedPubspecPath, 'utf8'))
+  const kit = parse(await fs.readFile(kitPubspecPath, 'utf8'))
+
+  // Merge environment constraints from the kit
+  if (kit.environment) {
+    generated.environment = {...generated.environment, ...kit.environment}
+  }
+
+  // Merge dependencies from the kit into the generated pubspec
+  if (kit.dependencies) {
+    generated.dependencies = {...generated.dependencies, ...kit.dependencies}
+  }
+
+  // Merge dev_dependencies from the kit
+  if (kit.dev_dependencies) {
+    generated.dev_dependencies = {...generated.dev_dependencies, ...kit.dev_dependencies} // eslint-disable-line camelcase
+  }
+
+  // Merge flutter section (e.g., generate: true for l10n)
+  if (kit.flutter) {
+    generated.flutter = {...generated.flutter, ...kit.flutter}
+  }
+
+  await fs.writeFile(generatedPubspecPath, stringify(generated), 'utf8')
+}
+
+/**
  * Replaces all `flutter_kit` / `flutterKit` references with the actual project name.
  */
 async function updateProjectReferences(projectPath: string, newName: string): Promise<void> {
-  const camelCaseName = newName.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+  const camelCaseName = newName.replaceAll(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
 
   const processFile = async (filePath: string) => {
     try {
       const content = await fs.readFile(filePath, 'utf8')
-      const updated = content.replace(/flutter_kit/g, newName).replace(/flutterKit/g, camelCaseName)
+      const updated = content.replaceAll('flutter_kit', newName).replaceAll('flutterKit', camelCaseName)
       if (content !== updated) {
         await fs.writeFile(filePath, updated, 'utf8')
       }
@@ -114,8 +150,10 @@ async function updateProjectReferences(projectPath: string, newName: string): Pr
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name)
       if (entry.isDirectory()) {
+        // eslint-disable-next-line no-await-in-loop
         await processDirectory(fullPath)
-      } else if (!entry.name.match(/\.(png|jpg|jpeg|gif|ttf|otf|woff|woff2|mp3|mp4|zip|jar)$/i)) {
+      } else if (!/\.(png|jpg|jpeg|gif|ttf|otf|woff|woff2|mp3|mp4|zip|jar)$/i.test(entry.name)) {
+        // eslint-disable-next-line no-await-in-loop
         await processFile(fullPath)
       }
     }
@@ -198,7 +236,7 @@ export function runFlutterPubGet(projectPath: string): void {
 export async function createFlutterProject(
   projectName: string,
   org: string,
-  zipResponse: Response,
+  zipResponse: Response, // eslint-disable-line n/no-unsupported-features/node-builtins
   cwd: string,
 ): Promise<string> {
   const projectPath = path.join(cwd, projectName)
@@ -208,8 +246,11 @@ export async function createFlutterProject(
     // Generate native platform scaffold
     runFlutterCreate(projectName, org, cwd)
 
-    // Overlay kit files on top
+    // Overlay kit files on top (excludes pubspec.yaml)
     await overlayKitFiles(projectPath, kitPath, projectName)
+
+    // Merge kit dependencies into the generated pubspec
+    await mergePubspec(projectPath, kitPath)
 
     // Patch native platform files
     await patchAndroidManifest(projectPath)
@@ -220,7 +261,7 @@ export async function createFlutterProject(
 
     return projectPath
   } finally {
-    await fs.rm(tempDir, {recursive: true, force: true}).catch(() => {})
+    await fs.rm(tempDir, {force: true, recursive: true}).catch(() => {})
   }
 }
 

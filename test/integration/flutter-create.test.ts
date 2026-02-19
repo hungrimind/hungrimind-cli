@@ -1,9 +1,12 @@
 import {expect} from 'chai'
-import * as fs from 'fs/promises'
-import * as path from 'path'
-import * as os from 'os'
-import {execSync} from 'child_process'
+import {execSync} from 'node:child_process'
+import * as fs from 'node:fs/promises'
+import * as os from 'node:os'
+import path from 'node:path'
+import {parse} from 'yaml'
+
 import {
+  mergePubspec,
   overlayKitFiles,
   patchAndroidManifest,
   patchMacOSEntitlements,
@@ -11,8 +14,8 @@ import {
   runFlutterPubGet,
 } from '../../src/utils/flutter.js'
 
-const KIT_REPO = process.env.GH_TOKEN
-  ? `https://x-access-token:${process.env.GH_TOKEN}@github.com/hungrimind/flutter_kit.git`
+const KIT_REPO = process.env.GH_REPO_TOKEN
+  ? `https://x-access-token:${process.env.GH_REPO_TOKEN}@github.com/hungrimind/flutter_kit.git`
   : 'git@github.com:hungrimind/flutter_kit.git'
 
 describe('flutter create integration', function () {
@@ -45,10 +48,13 @@ describe('flutter create integration', function () {
     // Step 1: flutter create
     runFlutterCreate(projectName, org, tmpDir)
 
-    // Step 2: overlay kit files
+    // Step 2: overlay kit files (excludes pubspec.yaml)
     await overlayKitFiles(projectPath, kitPath, projectName)
 
-    // Step 3: patch native files
+    // Step 3: merge kit dependencies into generated pubspec
+    await mergePubspec(projectPath, kitPath)
+
+    // Step 4: patch native files
     await patchAndroidManifest(projectPath)
     await patchMacOSEntitlements(projectPath)
 
@@ -56,9 +62,9 @@ describe('flutter create integration', function () {
     runFlutterPubGet(projectPath)
   })
 
-  after(async function () {
+  after(async () => {
     if (tmpDir) {
-      await fs.rm(tmpDir, {recursive: true, force: true}).catch(() => {})
+      await fs.rm(tmpDir, {force: true, recursive: true}).catch(() => {})
     }
   })
 
@@ -71,6 +77,28 @@ describe('flutter create integration', function () {
     const pubspec = await fs.readFile(path.join(projectPath, 'pubspec.yaml'), 'utf8')
     expect(pubspec).to.include(`name: ${projectName}`)
     expect(pubspec).not.to.include('flutter_kit')
+  })
+
+  it('has kit dependencies merged into pubspec.yaml', async () => {
+    const kitPubspec = parse(await fs.readFile(path.join(kitPath, 'pubspec.yaml'), 'utf8'))
+    const projectPubspec = parse(await fs.readFile(path.join(projectPath, 'pubspec.yaml'), 'utf8'))
+
+    // Every kit dependency should be in the merged pubspec
+    for (const dep of Object.keys(kitPubspec.dependencies ?? {})) {
+      expect(projectPubspec.dependencies).to.have.property(dep)
+    }
+
+    // Every kit dev_dependency should be in the merged pubspec
+    for (const dep of Object.keys(kitPubspec.dev_dependencies ?? {})) {
+      expect(projectPubspec.dev_dependencies).to.have.property(dep)
+    }
+
+    // Flutter config from kit should be merged (e.g., generate: true for l10n)
+    if (kitPubspec.flutter) {
+      for (const key of Object.keys(kitPubspec.flutter)) {
+        expect(projectPubspec.flutter).to.have.property(key)
+      }
+    }
   })
 
   it('has no flutter_kit references in dart files', async () => {
@@ -169,13 +197,14 @@ describe('flutter create integration', function () {
     }
   })
 
-  it('passes flutter analyze', function () {
+  it('passes flutter analyze', () => {
     // This validates the project is actually valid Dart/Flutter code
     try {
       execSync('flutter analyze', {cwd: projectPath, stdio: 'pipe'})
-    } catch (error: any) {
-      const stdout = error.stdout?.toString() ?? ''
-      const stderr = error.stderr?.toString() ?? ''
+    } catch (error: unknown) {
+      const execError = error as {stderr?: Buffer; stdout?: Buffer}
+      const stdout = execError.stdout?.toString() ?? ''
+      const stderr = execError.stderr?.toString() ?? ''
       throw new Error(`flutter analyze failed:\n${stdout}\n${stderr}`)
     }
   })

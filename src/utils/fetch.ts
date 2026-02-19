@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import {Command} from '@oclif/core'
 
 interface FetchOptions extends RequestInit {
@@ -5,7 +6,7 @@ interface FetchOptions extends RequestInit {
 }
 
 interface FetchResult {
-  response: Response
+  response: Response // eslint-disable-line n/no-unsupported-features/node-builtins
   responseText?: string // Response body text if read during verbose logging
 }
 
@@ -36,9 +37,10 @@ export async function fetchWithVerboseLogging(
     if (headersToLog['x-auth-token']) {
       headersToLog['x-auth-token'] = `*** MASKED (first 4 chars: ${headersToLog['x-auth-token'].slice(0, 4)}...) ***`
     }
+
     // Mask Authorization header if it exists
-    if (headersToLog['Authorization']) {
-      headersToLog['Authorization'] = '*** MASKED ***'
+    if (headersToLog.Authorization) {
+      headersToLog.Authorization = '*** MASKED ***'
     }
 
     const requestOptionsToLog = {
@@ -53,6 +55,7 @@ export async function fetchWithVerboseLogging(
     logFn('-------------------------------')
   }
 
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins
   const response = await fetch(url, options as RequestInit) // Cast back to RequestInit for fetch
 
   let responseText: string | undefined
@@ -76,9 +79,10 @@ export async function fetchWithVerboseLogging(
         if (data && typeof data === 'object' && data.downloadUrl) {
           data.downloadUrl = '*** MASKED ***'
         }
+
         // Add more fields to mask here if needed
         logFn(`Body: ${JSON.stringify(data, null, 2)}`) // Log potentially masked data
-      } catch (parseError) {
+      } catch {
         // If parsing fails, log the raw text
         logFn(`Body (raw, JSON parse failed): ${responseText}`)
       }
@@ -86,6 +90,7 @@ export async function fetchWithVerboseLogging(
       logFn(`Warning: Could not read response body for verbose logging: ${error}`)
       // responseText remains undefined or holds the raw text from the failed clone/text() attempt
     }
+
     logFn('-------------------------------')
   }
 
