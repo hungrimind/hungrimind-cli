@@ -1,13 +1,13 @@
-import * as fs from 'fs/promises'
-import * as path from 'path'
 import {Command, ux} from '@oclif/core'
+import * as fs from 'node:fs/promises'
+import path from 'node:path'
 
 export interface AppConfig {
-  appName: string
   appDescription: string
-  prodDomain: string
+  appName: string
   devDomain: string
   dockerUsername: string
+  prodDomain: string
 }
 
 export function validateAppName(input: string): string {
@@ -15,21 +15,23 @@ export function validateAppName(input: string): string {
   if (!/^[a-z]([a-z0-9-]*[a-z0-9])?$/.test(input)) {
     throw new Error('App name must be lowercase, start with a letter, and contain only letters, numbers, and hyphens')
   }
+
   if (input.length > 63) {
     throw new Error('App name must be 63 characters or less')
   }
+
   return input
 }
 
-export async function promptForAppConfig(command: Command): Promise<AppConfig> {
+export async function promptForAppConfig(_command: Command): Promise<AppConfig> {
   const inquirer = await import('inquirer')
 
   const answers = await inquirer.default.prompt([
     {
-      type: 'input',
-      name: 'appName',
       message: 'App name:',
-      validate: (input: string) => {
+      name: 'appName',
+      type: 'input',
+      validate(input: string) {
         try {
           validateAppName(input)
           return true
@@ -39,57 +41,59 @@ export async function promptForAppConfig(command: Command): Promise<AppConfig> {
       },
     },
     {
-      type: 'input',
-      name: 'appDescription',
       message: 'App description:',
+      name: 'appDescription',
+      type: 'input',
       validate: (input: string) => input.trim().length > 0 || 'Description cannot be empty',
     },
     {
-      type: 'input',
-      name: 'prodDomain',
       message: 'Production domain (e.g., playing.hungrimind.com):',
-      validate: (input: string) => {
+      name: 'prodDomain',
+      type: 'input',
+      validate(input: string) {
         if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(input)) {
           return 'Please enter a valid domain name'
         }
+
         return true
       },
     },
     {
-      type: 'input',
-      name: 'devDomain',
       message: 'Development domain (e.g., playing-dev.hungrimind.com):',
-      validate: (input: string) => {
+      name: 'devDomain',
+      type: 'input',
+      validate(input: string) {
         if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(input)) {
           return 'Please enter a valid domain name'
         }
+
         return true
       },
     },
     {
-      type: 'input',
-      name: 'dockerUsername',
       message: 'Docker username:',
+      name: 'dockerUsername',
+      type: 'input',
       validate: (input: string) => input.trim().length > 0 || 'Docker username cannot be empty',
     },
   ])
 
   return {
-    appName: answers.appName,
     appDescription: answers.appDescription,
-    prodDomain: answers.prodDomain,
+    appName: answers.appName,
     devDomain: answers.devDomain,
     dockerUsername: answers.dockerUsername,
+    prodDomain: answers.prodDomain,
   }
 }
 
 export function replacePlaceholders(content: string, config: AppConfig): string {
   return content
-    .replace(/\{\{app-name\}\}/g, config.appName)
-    .replace(/\{\{app-description\}\}/g, config.appDescription)
-    .replace(/\{\{your-domain\}\}/g, config.prodDomain)
-    .replace(/\{\{dev-domain\}\}/g, config.devDomain)
-    .replace(/\{\{docker-username\}\}/g, config.dockerUsername)
+    .replaceAll('{{app-name}}', config.appName)
+    .replaceAll('{{app-description}}', config.appDescription)
+    .replaceAll('{{your-domain}}', config.prodDomain)
+    .replaceAll('{{dev-domain}}', config.devDomain)
+    .replaceAll('{{docker-username}}', config.dockerUsername)
 }
 
 export async function copyAndProcessTemplate(
@@ -134,10 +138,10 @@ export async function createAppStructure(config: AppConfig, command: Command): P
       const inquirer = await import('inquirer')
       const {overwrite} = await inquirer.default.prompt([
         {
-          type: 'confirm',
-          name: 'overwrite',
-          message: `Directory '${appDir}' already exists. Overwrite?`,
           default: false,
+          message: `Directory '${appDir}' already exists. Overwrite?`,
+          name: 'overwrite',
+          type: 'confirm',
         },
       ])
 
@@ -155,36 +159,37 @@ export async function createAppStructure(config: AppConfig, command: Command): P
     // Copy and process all template files
     const templateFiles = [
       {
-        template: path.join(templatesDir, 'Chart.yaml.template'),
         target: path.join(appDir, 'Chart.yaml'),
+        template: path.join(templatesDir, 'Chart.yaml.template'),
       },
       {
-        template: path.join(templatesDir, 'values.yaml.template'),
         target: path.join(appDir, 'values.yaml'),
+        template: path.join(templatesDir, 'values.yaml.template'),
       },
       {
-        template: path.join(templatesDir, 'values-dev.yaml.template'),
         target: path.join(appDir, 'values-dev.yaml'),
+        template: path.join(templatesDir, 'values-dev.yaml.template'),
       },
       {
-        template: path.join(templatesDir, 'templates', 'deployment.yaml.template'),
         target: path.join(appDir, 'templates', 'deployment.yaml'),
+        template: path.join(templatesDir, 'templates', 'deployment.yaml.template'),
       },
       {
-        template: path.join(templatesDir, 'templates', 'service.yaml.template'),
         target: path.join(appDir, 'templates', 'service.yaml'),
+        template: path.join(templatesDir, 'templates', 'service.yaml.template'),
       },
       {
-        template: path.join(templatesDir, 'templates', 'ingress.yaml.template'),
         target: path.join(appDir, 'templates', 'ingress.yaml'),
+        template: path.join(templatesDir, 'templates', 'ingress.yaml.template'),
       },
       {
-        template: path.join(templatesDir, '.github', 'workflows', 'app-workflow.yaml.template'),
         target: workflowFile,
+        template: path.join(templatesDir, '.github', 'workflows', 'app-workflow.yaml.template'),
       },
     ]
 
-    for (const {template, target} of templateFiles) {
+    for (const {target, template} of templateFiles) {
+      // eslint-disable-next-line no-await-in-loop
       await copyAndProcessTemplate(template, target, config)
       command.log(ux.colorize('green', `✔ Created ${target}`))
 
@@ -200,7 +205,7 @@ export async function createAppStructure(config: AppConfig, command: Command): P
     try {
       // Remove app directory if we created it
       if (appDirCreated && (await checkIfDirectoryExists(appDir))) {
-        await fs.rm(appDir, {recursive: true, force: true})
+        await fs.rm(appDir, {force: true, recursive: true})
         command.log(ux.colorize('yellow', `✔ Removed ${appDir} directory`))
       }
 

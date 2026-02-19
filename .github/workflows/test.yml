@@ -24,3 +24,23 @@ jobs:
       - run: pnpm install
       - run: pnpm run build
       - run: pnpm run test
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.1'
+      - run: pnpm install
+      - run: pnpm run build
+      - run: pnpm run test:integration
+        env:
+          GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}

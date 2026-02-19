@@ -1,11 +1,12 @@
 import {Args, Command, Flags, ux} from '@oclif/core'
-import * as path from 'path'
-import * as os from 'os'
-import * as fs from 'fs/promises'
+import * as fs from 'node:fs/promises'
+import * as os from 'node:os'
+import path from 'node:path'
+
 import {API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME} from '../../config.js'
-import {extractAndRenameProject} from '../../utils/flutter.js'
 import {fetchWithVerboseLogging} from '../../utils/fetch.js'
-import {promptForRequiredPlaceholders, promptAndRunFirstInstall} from '../../utils/kubernetes.js'
+import {promptAndRunFirstInstall, promptForRequiredPlaceholders} from '../../utils/kubernetes.js'
+import {extractAndRenameProject} from '../../utils/zip.js'
 
 interface KubernetesCreateKitResponse {
   downloadUrl: string
@@ -16,46 +17,23 @@ interface AuthConfig {
 }
 
 export default class KubernetesCreate extends Command {
-  static override description =
-    'Create a new Kubernetes project with the Hungrimind Kubernetes Kit and configure required settings'
-
-  static flags = {
-    verbose: Flags.boolean({char: 'v', description: 'Enable verbose output for debugging'}),
-  }
-
   static args = {
     name: Args.string({
       description: 'Name of the Kubernetes folder (lowercase with underscores, e.g., hungrimind_infrastructure)',
-      required: true,
-      parse: async (input: string): Promise<string> => {
+      async parse(input: string): Promise<string> {
         if (!/^[a-z][a-z0-9_]*$/.test(input)) {
           throw new Error('Project name must be lowercase with underscores (e.g., hungrimind_infrastructure)')
         }
+
         return input
       },
+      required: true,
     }),
   }
-
-  private async getStoredToken(): Promise<string> {
-    const configPath = path.join(os.homedir(), ROOT_FOLDER_NAME, AUTH_FILE_NAME)
-    try {
-      const config = JSON.parse(await fs.readFile(configPath, 'utf8')) as AuthConfig
-      if (!config.token) {
-        throw new Error('Token not found in auth config.')
-      }
-      return config.token
-    } catch (error) {
-      try {
-        await fs.unlink(configPath)
-        this.log('Removed potentially invalid auth file.')
-      } catch (unlinkError) {
-        this.warn(`Could not remove auth file at ${configPath}: ${unlinkError}`)
-      }
-      this.error(
-        ux.colorize('red', 'Authentication failed or token missing. Please run `hungrimind login` to log in.'),
-        {exit: 1},
-      )
-    }
+static override description =
+    'Create a new Kubernetes project with the Hungrimind Kubernetes Kit and configure required settings'
+static flags = {
+    verbose: Flags.boolean({char: 'v', description: 'Enable verbose output for debugging'}),
   }
 
   public async run(): Promise<void> {
@@ -73,11 +51,11 @@ export default class KubernetesCreate extends Command {
 
       // Prepare fetch options
       const fetchOptions = {
-        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-auth-token': token,
         },
+        method: 'POST',
       }
 
       // Use the wrapper function for the API call
@@ -97,6 +75,7 @@ export default class KubernetesCreate extends Command {
         if (flags.verbose) {
           this.log(`Error Body: ${errorBody}`)
         }
+
         throw new Error(`Failed to fetch Kubernetes Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`)
       }
 
@@ -112,12 +91,14 @@ export default class KubernetesCreate extends Command {
         const bodyContent = responseText ?? '[Response body not available or already consumed]'
         throw new Error(`Failed to parse Kubernetes Kit response JSON: ${error}. Body was: ${bodyContent}`)
       }
+
       ux.action.stop(ux.colorize('green', '✔ Fetched details'))
       actionRunning = false
 
       // Fetch the zip file from the download URL
       ux.action.start('Downloading Kubernetes Kit')
       actionRunning = true
+      // eslint-disable-next-line n/no-unsupported-features/node-builtins
       const zipResponse = await fetch(data.downloadUrl)
       if (!zipResponse.ok) {
         throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
@@ -126,6 +107,7 @@ export default class KubernetesCreate extends Command {
       if (!zipResponse.headers.get('Content-Type')?.includes('application/zip')) {
         throw new Error('Expected zip file from download URL, but received different content type.')
       }
+
       ux.action.stop(ux.colorize('green', '✔ Downloaded'))
       actionRunning = false
 
@@ -157,7 +139,32 @@ export default class KubernetesCreate extends Command {
       if (actionRunning) {
         ux.action.stop(ux.colorize('red', '✖ failed'))
       }
+
       this.error(ux.colorize('red', `Project creation failed: ${(error as Error).message}`), {exit: 1})
+    }
+  }
+
+  private async getStoredToken(): Promise<string> {
+    const configPath = path.join(os.homedir(), ROOT_FOLDER_NAME, AUTH_FILE_NAME)
+    try {
+      const config = JSON.parse(await fs.readFile(configPath, 'utf8')) as AuthConfig
+      if (!config.token) {
+        throw new Error('Token not found in auth config.')
+      }
+
+      return config.token
+    } catch {
+      try {
+        await fs.unlink(configPath)
+        this.log('Removed potentially invalid auth file.')
+      } catch (unlinkError) {
+        this.warn(`Could not remove auth file at ${configPath}: ${unlinkError}`)
+      }
+
+      this.error(
+        ux.colorize('red', 'Authentication failed or token missing. Please run `hungrimind login` to log in.'),
+        {exit: 1},
+      )
     }
   }
 }

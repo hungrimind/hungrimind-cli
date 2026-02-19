@@ -1,15 +1,15 @@
 import {Args, Command} from '@oclif/core'
-import {promptForRequiredPlaceholders, promptAndRunFirstInstall} from '../../utils/kubernetes.js'
+
+import {promptAndRunFirstInstall, promptForRequiredPlaceholders} from '../../utils/kubernetes.js'
 
 export default class KubernetesInstall extends Command {
-  static override description = 'Install/deploy a Kubernetes project after validating required configuration'
-
   static override args = {
     directory: Args.string({
-      description: 'The directory of the Kubernetes project to install.',
       default: '.',
+      description: 'The directory of the Kubernetes project to install.',
     }),
   }
+static override description = 'Install/deploy a Kubernetes project after validating required configuration'
 
   public async run(): Promise<void> {
     const {args} = await this.parse(KubernetesInstall)

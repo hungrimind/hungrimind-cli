@@ -1,8 +1,8 @@
 import {ux} from '@oclif/core'
-import * as fs from 'fs/promises'
-import * as path from 'path'
 import inquirer from 'inquirer'
-import * as childProcess from 'child_process'
+import * as childProcess from 'node:child_process'
+import * as fs from 'node:fs/promises'
+import path from 'node:path'
 
 // Required placeholders that must be filled before deployment
 export const REQUIRED_PLACEHOLDERS = ['metal-lb-server-ip', 'cert-staging-email', 'cert-prod-email']
@@ -18,6 +18,8 @@ async function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): Promis
       if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === '.DS_Store') {
         continue
       }
+
+      // eslint-disable-next-line no-await-in-loop
       await getAllFiles(fullPath, arrayOfFiles)
     } else if (entry.isFile()) {
       // Filter for YAML files with "values" in their name
@@ -27,11 +29,12 @@ async function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): Promis
       }
     }
   }
+
   return arrayOfFiles
 }
 
 // Helper method to get line number and line content for a character index
-function getLineContext(content: string, charIndex: number): {lineNumber: number; line: string} {
+function getLineContext(content: string, charIndex: number): {line: string; lineNumber: number;} {
   let lineNumber = 1
   let lineStartIndex = 0
   for (let i = 0; i < charIndex; i++) {
@@ -40,14 +43,15 @@ function getLineContext(content: string, charIndex: number): {lineNumber: number
       lineStartIndex = i + 1
     }
   }
+
   const lineEndIndex = content.indexOf('\n', lineStartIndex)
-  const line = content.substring(lineStartIndex, lineEndIndex === -1 ? content.length : lineEndIndex)
-  return {lineNumber, line}
+  const line = content.slice(lineStartIndex, lineEndIndex === -1 ? content.length : lineEndIndex)
+  return {line, lineNumber}
 }
 
 // Method to validate if all required placeholders are filled in a project
 export async function validateRequiredPlaceholders(
-  command: {log: (message?: string) => void; warn: (input: string | Error) => void},
+  command: {log: (message?: string) => void; warn: (input: Error | string) => void},
   projectDirName: string,
 ): Promise<{isValid: boolean; missingPlaceholders: string[]}> {
   const projectFullPath = path.resolve(projectDirName)
@@ -57,6 +61,7 @@ export async function validateRequiredPlaceholders(
 
   for (const filePath of allFiles) {
     try {
+      // eslint-disable-next-line no-await-in-loop
       const content = await fs.readFile(filePath, 'utf8')
       let match
       placeholderRegex.lastIndex = 0
@@ -65,7 +70,7 @@ export async function validateRequiredPlaceholders(
         const placeholderName = match[1].trim()
         foundPlaceholders.add(placeholderName)
       }
-    } catch (error) {
+    } catch {
       // Skip files that can't be read
       continue
     }
@@ -81,7 +86,7 @@ export async function validateRequiredPlaceholders(
 
 // Method to prompt for required placeholders only (blocking until all are filled)
 export async function promptForRequiredPlaceholders(
-  command: {log: (message?: string) => void; warn: (input: string | Error) => void},
+  command: {log: (message?: string) => void; warn: (input: Error | string) => void},
   projectDirName: string,
 ): Promise<void> {
   const validation = await validateRequiredPlaceholders(command, projectDirName)
@@ -104,8 +109,9 @@ export async function promptForRequiredPlaceholders(
 }
 
 // Method to prompt for placeholder replacements
+// eslint-disable-next-line complexity
 export async function promptForPlaceholderReplacements(
-  command: {log: (message?: string) => void; warn: (input: string | Error) => void},
+  command: {log: (message?: string) => void; warn: (input: Error | string) => void},
   projectDirName: string,
   mode: 'all' | 'required-only' = 'all',
 ): Promise<void> {
@@ -124,9 +130,10 @@ export async function promptForPlaceholderReplacements(
 
   for (const filePath of allFiles) {
     try {
+      // eslint-disable-next-line no-await-in-loop
       const originalContent = await fs.readFile(filePath, 'utf8')
-      let currentFileContent = originalContent
-      let newFileContentParts: string[] = []
+      const currentFileContent = originalContent
+      const newFileContentParts: string[] = []
       let lastIndexProcessed = 0
       let madeChangesToFile = false
       let instanceInFile = 0
@@ -138,6 +145,7 @@ export async function promptForPlaceholderReplacements(
         placeholderRegex.lastIndex = 0
         continue
       }
+
       // Ensure regex is reset before exec loop for current file
       placeholderRegex.lastIndex = 0
 
@@ -174,7 +182,7 @@ export async function promptForPlaceholderReplacements(
         const fullMatch = match[0] // e.g., "{{ some_value }}"
         const placeholderIndex = match.index
 
-        newFileContentParts.push(currentFileContent.substring(lastIndexProcessed, placeholderIndex))
+        newFileContentParts.push(currentFileContent.slice(lastIndexProcessed, placeholderIndex))
 
         const {line} = getLineContext(currentFileContent, placeholderIndex)
         command.log(`File: ${ux.colorize('cyan', relativeFilePath)}`)
@@ -186,16 +194,18 @@ export async function promptForPlaceholderReplacements(
             ? `Replace '${fullMatch}' with (required):`
             : `Replace '${fullMatch}' with (leave empty to skip):`
 
+        // eslint-disable-next-line no-await-in-loop
         const answers = await inquirer.prompt([
           {
-            type: 'input',
-            name: 'replacement',
-            message: promptMessage,
             default: '',
-            validate: (input: string) => {
+            message: promptMessage,
+            name: 'replacement',
+            type: 'input',
+            validate(input: string) {
               if ((mode === 'required-only' || isRequired) && (!input || input.trim() === '')) {
                 return 'This placeholder is required and cannot be empty.'
               }
+
               return true
             },
           },
@@ -210,15 +220,17 @@ export async function promptForPlaceholderReplacements(
           newFileContentParts.push(fullMatch) // Keep original placeholder
           command.log(ux.colorize('dim', `  Skipped.`))
         }
+
         lastIndexProcessed = placeholderIndex + fullMatch.length
       }
 
       if (lastIndexProcessed < currentFileContent.length) {
-        newFileContentParts.push(currentFileContent.substring(lastIndexProcessed))
+        newFileContentParts.push(currentFileContent.slice(Math.max(0, lastIndexProcessed)))
       }
 
       if (madeChangesToFile) {
         const finalContent = newFileContentParts.join('')
+        // eslint-disable-next-line no-await-in-loop
         await fs.writeFile(filePath, finalContent, 'utf8')
         command.log(ux.colorize('green', `✔ Updated file: ${relativeFilePath}`))
       } else if (instanceInFile > 0) {
@@ -238,9 +250,7 @@ export async function promptForPlaceholderReplacements(
     }
   }
 
-  if (!anyPlaceholdersFoundInAnyFile) {
-    command.log(`No ${modeText} '{{...}}' placeholders found in any 'values' YAML files within '${projectDirName}'.`)
-  } else {
+  if (anyPlaceholdersFoundInAnyFile) {
     command.log(
       ux.colorize(
         'green',
@@ -249,26 +259,29 @@ export async function promptForPlaceholderReplacements(
         } placeholder update process complete for '${projectDirName}'.`,
       ),
     )
+  } else {
+    command.log(`No ${modeText} '{{...}}' placeholders found in any 'values' YAML files within '${projectDirName}'.`)
   }
 }
 
 // Method to prompt and execute first_install.sh script
 export async function promptAndRunFirstInstall(
-  command: {log: (message?: string) => void; warn: (input: string | Error) => void},
+  command: {log: (message?: string) => void; warn: (input: Error | string) => void},
   projectDirName: string,
 ): Promise<void> {
   const firstInstallScriptPath = path.join(projectDirName, 'first_install.sh')
 
   try {
+    // eslint-disable-next-line n/no-unsupported-features/node-builtins
     await fs.access(firstInstallScriptPath, fs.constants.F_OK) // Check if script exists
 
     command.log(ux.colorize('yellow', '\n--- Next Step ---'))
     const {runScript} = await inquirer.prompt([
       {
+        default: true,
+        message: `You have now cloned all the Kubernetes Kit files. This includes ‘first_install.sh’ which will deploy the preconfigured applications to your cluster. Do you want to run it? (You can also run it later with ‘hungrimind kubernetes install‘)`,
         name: 'runScript',
         type: 'confirm',
-        message: `You have now cloned all the Kubernetes Kit files. This includes ‘first_install.sh’ which will deploy the preconfigured applications to your cluster. Do you want to run it? (You can also run it later with ‘hungrimind kubernetes install‘)`,
-        default: true,
       },
     ])
 
@@ -286,9 +299,9 @@ export async function promptAndRunFirstInstall(
         })
 
         command.log(ux.colorize('green', `\n✔ 'first_install.sh' executed successfully!`))
-      } catch (scriptError: any) {
+      } catch (scriptError: unknown) {
         command.warn(
-          ux.colorize('red', `\n✖ 'first_install.sh' failed with exit code ${scriptError.status || 'unknown'}.`),
+          ux.colorize('red', `\n✖ 'first_install.sh' failed with exit code ${(scriptError as {status?: number}).status || 'unknown'}.`),
         )
         command.log(ux.colorize('dim', `You may need to run it manually: cd ${projectDirName} && ./first_install.sh`))
       }
@@ -300,7 +313,7 @@ export async function promptAndRunFirstInstall(
         ),
       )
     }
-  } catch (error) {
+  } catch {
     // fs.access throws if file doesn't exist - this is fine, just means no script to run.
     command.log(ux.colorize('dim', `No 'first_install.sh' script found in '${projectDirName}', skipping this step.`))
   }
