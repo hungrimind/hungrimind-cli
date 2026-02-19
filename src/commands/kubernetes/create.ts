@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
 import {API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME} from '../../config.js'
-import {extractAndRenameProject} from '../../utils/flutter.js'
+import {extractAndRenameProject} from '../../utils/zip.js'
 import {fetchWithVerboseLogging} from '../../utils/fetch.js'
 import {promptForRequiredPlaceholders, promptAndRunFirstInstall} from '../../utils/kubernetes.js'
 

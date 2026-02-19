@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as os from 'os'
 import * as fs from 'fs/promises'
 import {API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME} from '../../config.js'
-import {extractAndRenameProject, updateProjectFiles} from '../../utils/flutter.js'
+import {createFlutterProject, createFlutterProjectFromLocal} from '../../utils/flutter.js'
 import {fetchWithVerboseLogging} from '../../utils/fetch.js'
 
 interface FlutterCreateKitResponse {
@@ -19,6 +19,13 @@ export default class FlutterCreate extends Command {
 
   static flags = {
     verbose: Flags.boolean({char: 'v', description: 'Enable verbose output for debugging'}),
+    org: Flags.string({
+      description: 'Organization identifier for the project (e.g., com.mycompany)',
+      default: 'com.example',
+    }),
+    local: Flags.string({
+      description: 'Path to a local kit directory (skips API download, useful for development)',
+    }),
   }
 
   static args = {
@@ -63,81 +70,86 @@ export default class FlutterCreate extends Command {
     let actionRunning = false
 
     try {
-      ux.action.start('Fetching Flutter Kit details')
-      actionRunning = true
-      const token = await this.getStoredToken()
-      const endpoint = '/kit/flutter'
-      const url = `${API_BASE_URL}${endpoint}`
+      if (flags.local) {
+        // Local development mode — skip API download
+        this.log(ux.colorize('yellow', `Using local kit at: ${flags.local}`))
 
-      // Prepare fetch options
-      const fetchOptions = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token,
-        },
-      }
+        ux.action.start('Creating Flutter project')
+        actionRunning = true
+        await createFlutterProjectFromLocal(args.name, flags.org, flags.local, process.cwd())
+        ux.action.stop(ux.colorize('green', '✔ Project created'))
+        actionRunning = false
+      } else {
+        // Normal flow — download from API
+        ux.action.start('Fetching Flutter Kit details')
+        actionRunning = true
+        const token = await this.getStoredToken()
+        const endpoint = '/kit/flutter'
+        const url = `${API_BASE_URL}${endpoint}`
 
-      // Use the wrapper function for the API call
-      const {response, responseText} = await fetchWithVerboseLogging(
-        url,
-        fetchOptions,
-        flags.verbose,
-        this.log.bind(this),
-      )
-
-      if (flags.verbose) {
-        this.log(`Response status: ${response.status}`)
-      }
-
-      if (!response.ok) {
-        const errorBody = responseText ?? (await response.text())
-        if (flags.verbose) {
-          this.log(`Error Body: ${errorBody}`)
+        const fetchOptions = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token,
+          },
         }
-        throw new Error(`Failed to fetch Flutter Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`)
+
+        const {response, responseText} = await fetchWithVerboseLogging(
+          url,
+          fetchOptions,
+          flags.verbose,
+          this.log.bind(this),
+        )
+
+        if (flags.verbose) {
+          this.log(`Response status: ${response.status}`)
+        }
+
+        if (!response.ok) {
+          const errorBody = responseText ?? (await response.text())
+          if (flags.verbose) {
+            this.log(`Error Body: ${errorBody}`)
+          }
+          throw new Error(`Failed to fetch Flutter Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`)
+        }
+
+        let data: FlutterCreateKitResponse
+        try {
+          const bodyToParse = responseText ?? (await response.json())
+          data =
+            typeof bodyToParse === 'string'
+              ? (JSON.parse(bodyToParse) as FlutterCreateKitResponse)
+              : (bodyToParse as FlutterCreateKitResponse)
+        } catch (error) {
+          const bodyContent = responseText ?? '[Response body not available or already consumed]'
+          throw new Error(`Failed to parse Flutter Kit response JSON: ${error}. Body was: ${bodyContent}`)
+        }
+        ux.action.stop(ux.colorize('green', '✔ Fetched details'))
+        actionRunning = false
+
+        ux.action.start('Downloading Flutter Kit')
+        actionRunning = true
+        const zipResponse = await fetch(data.downloadUrl)
+        if (!zipResponse.ok) {
+          throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
+        }
+
+        if (!zipResponse.headers.get('Content-Type')?.includes('application/zip')) {
+          throw new Error('Expected zip file from download URL, but received different content type.')
+        }
+        ux.action.stop(ux.colorize('green', '✔ Downloaded'))
+        actionRunning = false
+
+        ux.action.start('Creating Flutter project')
+        actionRunning = true
+        await createFlutterProject(args.name, flags.org, zipResponse, process.cwd())
+        ux.action.stop(ux.colorize('green', '✔ Project created'))
+        actionRunning = false
       }
-
-      // Parse JSON data
-      let data: FlutterCreateKitResponse
-      try {
-        const bodyToParse = responseText ?? (await response.json())
-        data =
-          typeof bodyToParse === 'string'
-            ? (JSON.parse(bodyToParse) as FlutterCreateKitResponse)
-            : (bodyToParse as FlutterCreateKitResponse)
-      } catch (error) {
-        const bodyContent = responseText ?? '[Response body not available or already consumed]'
-        throw new Error(`Failed to parse Flutter Kit response JSON: ${error}. Body was: ${bodyContent}`)
-      }
-      ux.action.stop(ux.colorize('green', '✔ Fetched details'))
-      actionRunning = false
-
-      // Fetch the zip file from the download URL
-      ux.action.start('Downloading Flutter Kit')
-      actionRunning = true
-      const zipResponse = await fetch(data.downloadUrl)
-      if (!zipResponse.ok) {
-        throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
-      }
-
-      if (!zipResponse.headers.get('Content-Type')?.includes('application/zip')) {
-        throw new Error('Expected zip file from download URL, but received different content type.')
-      }
-      ux.action.stop(ux.colorize('green', '✔ Downloaded'))
-      actionRunning = false
-
-      ux.action.start('Extracting and setting up project')
-      actionRunning = true
-
-      const projectPath = await extractAndRenameProject(args.name, zipResponse)
-      await updateProjectFiles(projectPath, args.name)
-      ux.action.stop(ux.colorize('green', '✔ Project set up'))
-      actionRunning = false
 
       this.log(ux.colorize('green', '\n🎉 Successfully created Flutter project!'))
 
-      // Add link to Hungrimind docs
       this.log(
         `Find documentation for the Flutter Kit at: ${ux.colorize(
           'blue',
@@ -145,7 +157,6 @@ export default class FlutterCreate extends Command {
         )}`,
       )
 
-      // Mimic flutter create output for running the app
       this.log('\nIn order to run your application:')
       this.log(`  $ cd ${ux.colorize('cyan', args.name)}`)
       this.log(`  $ ${ux.colorize('cyan', 'flutter run')}`)

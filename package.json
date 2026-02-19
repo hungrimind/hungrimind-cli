@@ -72,6 +72,7 @@
     "posttest": "pnpm run lint",
     "prepack": "oclif manifest && oclif readme",
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "test:integration": "mocha --timeout 300000 \"test/integration/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
   "types": "dist/index.d.ts",
