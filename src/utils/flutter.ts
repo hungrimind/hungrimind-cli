@@ -16,6 +16,7 @@ const EXCLUDED_FROM_OVERLAY = new Set([
   '.github',
   '.metadata',
   'build',
+  'docs', // Kit documentation, read on GitHub instead
   'pubspec.lock',
   'pubspec.yaml', // Merged separately, not overlaid
   ...NATIVE_PLATFORM_DIRS,

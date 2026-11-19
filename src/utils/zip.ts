@@ -38,6 +38,8 @@ export async function extractAndRenameProject(projectName: string, zipResponse: 
     const renamedPath = path.join(targetDir, projectName)
     // eslint-disable-next-line n/no-unsupported-features/node-builtins
     await fs.cp(extractedPath, renamedPath, {recursive: true})
+    // Kit documentation lives on GitHub; keep it out of the user's project.
+    await fs.rm(path.join(renamedPath, 'docs'), {force: true, recursive: true})
     await fs.rm(extractedPath, {force: true, recursive: true})
 
     return renamedPath
