@@ -42,5 +42,3 @@ jobs:
       - run: pnpm install
       - run: pnpm run build
       - run: pnpm run test:integration
-        env:
-          GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}

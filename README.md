@@ -1,7 +1,27 @@
 hungrimind-cli
 =================
 
-A CLI created by the people over at Hungrimind
+A CLI created by the people over at Hungrimind. It scaffolds projects from the
+[Flutter Kit](https://github.com/hungrimind/flutter_kit) and the
+[Kubernetes Kit](https://github.com/hungrimind/kubernetes_kit).
+
+> Hungrimind has shut down. Both kits are now free and public, and the CLI
+> downloads them straight from GitHub, so no account or login is needed.
+
+## Install
+
+Install directly from GitHub (requires Node.js 18+):
+
+```sh
+npm install -g github:hungrimind/hungrimind-cli
+```
+
+Then create a project:
+
+```sh
+hungrimind flutter create my_app --org com.mycompany
+hungrimind kubernetes create my_infrastructure
+```
 
 
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
@@ -35,7 +55,6 @@ USAGE
 * [`hungrimind kubernetes configure [DIRECTORY]`](#hungrimind-kubernetes-configure-directory)
 * [`hungrimind kubernetes create NAME`](#hungrimind-kubernetes-create-name)
 * [`hungrimind kubernetes install [DIRECTORY]`](#hungrimind-kubernetes-install-directory)
-* [`hungrimind login`](#hungrimind-login)
 
 ## `hungrimind flutter create NAME`
 
@@ -150,17 +169,4 @@ DESCRIPTION
 
 _See code: [src/commands/kubernetes/install.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/kubernetes/install.ts)_
 
-## `hungrimind login`
-
-Authenticate with GitHub
-
-```
-USAGE
-  $ hungrimind login
-
-DESCRIPTION
-  Authenticate with GitHub
-```
-
-_See code: [src/commands/login.ts](https://github.com/hungrimind/hungrimind-cli/blob/v1.0.0/src/commands/login.ts)_
 <!-- commandsstop -->

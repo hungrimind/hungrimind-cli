@@ -1,20 +1,9 @@
 import {Args, Command, Flags, ux} from '@oclif/core'
-import * as fs from 'node:fs/promises'
-import * as os from 'node:os'
-import path from 'node:path'
 
-import {API_BASE_URL, AUTH_FILE_NAME, ROOT_FOLDER_NAME} from '../../config.js'
-import {fetchWithVerboseLogging} from '../../utils/fetch.js'
+import {KIT_OWNER, KUBERNETES_KIT_REPO} from '../../config.js'
+import {downloadKit} from '../../utils/download.js'
 import {promptAndRunFirstInstall, promptForRequiredPlaceholders} from '../../utils/kubernetes.js'
 import {extractAndRenameProject} from '../../utils/zip.js'
-
-interface KubernetesCreateKitResponse {
-  downloadUrl: string
-}
-
-interface AuthConfig {
-  token: string
-}
 
 export default class KubernetesCreate extends Command {
   static args = {
@@ -43,71 +32,9 @@ static flags = {
     let actionRunning = false
 
     try {
-      ux.action.start('Fetching Kubernetes Kit details')
-      actionRunning = true
-      const token = await this.getStoredToken()
-      const endpoint = '/kit/kubernetes'
-      const url = `${API_BASE_URL}${endpoint}`
-
-      // Prepare fetch options
-      const fetchOptions = {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token,
-        },
-        method: 'POST',
-      }
-
-      // Use the wrapper function for the API call
-      const {response, responseText} = await fetchWithVerboseLogging(
-        url,
-        fetchOptions,
-        flags.verbose,
-        this.log.bind(this),
-      )
-
-      if (flags.verbose) {
-        this.log(`Response status: ${response.status}`)
-      }
-
-      if (!response.ok) {
-        const errorBody = responseText ?? (await response.text())
-        if (flags.verbose) {
-          this.log(`Error Body: ${errorBody}`)
-        }
-
-        throw new Error(`Failed to fetch Kubernetes Kit: ${response.statusText}${errorBody ? ` - ${errorBody}` : ''}`)
-      }
-
-      // Parse JSON data
-      let data: KubernetesCreateKitResponse
-      try {
-        const bodyToParse = responseText ?? (await response.json())
-        data =
-          typeof bodyToParse === 'string'
-            ? (JSON.parse(bodyToParse) as KubernetesCreateKitResponse)
-            : (bodyToParse as KubernetesCreateKitResponse)
-      } catch (error) {
-        const bodyContent = responseText ?? '[Response body not available or already consumed]'
-        throw new Error(`Failed to parse Kubernetes Kit response JSON: ${error}. Body was: ${bodyContent}`)
-      }
-
-      ux.action.stop(ux.colorize('green', '✔ Fetched details'))
-      actionRunning = false
-
-      // Fetch the zip file from the download URL
       ux.action.start('Downloading Kubernetes Kit')
       actionRunning = true
-      // eslint-disable-next-line n/no-unsupported-features/node-builtins
-      const zipResponse = await fetch(data.downloadUrl)
-      if (!zipResponse.ok) {
-        throw new Error(`Failed to download zip file: ${zipResponse.statusText}`)
-      }
-
-      if (!zipResponse.headers.get('Content-Type')?.includes('application/zip')) {
-        throw new Error('Expected zip file from download URL, but received different content type.')
-      }
-
+      const zipResponse = await downloadKit(KUBERNETES_KIT_REPO, flags.verbose, this.log.bind(this))
       ux.action.stop(ux.colorize('green', '✔ Downloaded'))
       actionRunning = false
 
@@ -128,11 +55,10 @@ static flags = {
         ux.colorize('green', `\n🎉 Successfully created Kubernetes project '${ux.colorize('cyan', args.name)}'!`),
       )
 
-      // Add link to Hungrimind docs
       this.log(
         `Find documentation for the Kubernetes Kit at: ${ux.colorize(
           'blue',
-          'https://hungrimind.com/kit/kubernetes/introduction',
+          `https://github.com/${KIT_OWNER}/${KUBERNETES_KIT_REPO}`,
         )}`,
       )
     } catch (error) {
@@ -141,30 +67,6 @@ static flags = {
       }
 
       this.error(ux.colorize('red', `Project creation failed: ${(error as Error).message}`), {exit: 1})
-    }
-  }
-
-  private async getStoredToken(): Promise<string> {
-    const configPath = path.join(os.homedir(), ROOT_FOLDER_NAME, AUTH_FILE_NAME)
-    try {
-      const config = JSON.parse(await fs.readFile(configPath, 'utf8')) as AuthConfig
-      if (!config.token) {
-        throw new Error('Token not found in auth config.')
-      }
-
-      return config.token
-    } catch {
-      try {
-        await fs.unlink(configPath)
-        this.log('Removed potentially invalid auth file.')
-      } catch (unlinkError) {
-        this.warn(`Could not remove auth file at ${configPath}: ${unlinkError}`)
-      }
-
-      this.error(
-        ux.colorize('red', 'Authentication failed or token missing. Please run `hungrimind login` to log in.'),
-        {exit: 1},
-      )
     }
   }
 }

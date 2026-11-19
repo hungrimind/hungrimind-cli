@@ -14,9 +14,7 @@ import {
   runFlutterPubGet,
 } from '../../src/utils/flutter.js'
 
-const KIT_REPO = process.env.GH_REPO_TOKEN
-  ? `https://x-access-token:${process.env.GH_REPO_TOKEN}@github.com/hungrimind/flutter_kit.git`
-  : 'git@github.com:hungrimind/flutter_kit.git'
+const KIT_REPO = 'https://github.com/hungrimind/flutter_kit.git'
 
 describe('flutter create integration', function () {
   // These tests clone a repo and run flutter commands so they need a generous timeout

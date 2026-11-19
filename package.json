@@ -1,7 +1,7 @@
 {
   "name": "@hungrimind/hungrimind-cli",
   "description": "A CLI created by the people over at Hungrimind",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "author": "Robert Brunhage",
   "bin": {
     "hungrimind": "bin/run.js"
@@ -15,7 +15,6 @@
     "@types/unzipper": "^0.10.11",
     "adm-zip": "^0.5.16",
     "inquirer": "^12.6.3",
-    "open": "^10.1.1",
     "unzipper": "^0.12.3",
     "yaml": "^2.8.2"
   },
@@ -72,6 +71,7 @@
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "pnpm run lint",
     "prepack": "oclif manifest && oclif readme",
+    "prepare": "npm run build",
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "test:integration": "mocha --timeout 300000 \"test/integration/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
